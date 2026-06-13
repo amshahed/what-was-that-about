@@ -60,6 +60,14 @@ function parseTone(v: unknown, path: string): Tone {
 function parseLayer(raw: unknown, path: string): Layer {
   const obj = reqObject(raw, path, "layer");
   const component = reqString(obj.component, `${path}.component`, "component id");
+  // Caption is an internal layer auto-appended by composeScene from scene.caption.
+  // Allowing a manual caption layer alongside scene.caption would render it twice.
+  if (component === "caption") {
+    throw new ScriptParseError(
+      `${path}.component`,
+      `caption is set via the scene's top-level "caption" field, not a manual layer`,
+    );
+  }
   if (!has(component)) {
     throw new ScriptParseError(
       `${path}.component`,
@@ -81,8 +89,14 @@ function parseScene(raw: unknown, path: string): SceneSpec {
   }
   const layers = layersRaw.map((l, i) => parseLayer(l, `${path}.layers[${i}]`));
   const caption = obj.caption;
-  if (caption !== undefined && typeof caption !== "string") {
-    throw new ScriptParseError(`${path}.caption`, "caption must be a string");
+  if (caption !== undefined) {
+    if (typeof caption !== "string") {
+      throw new ScriptParseError(`${path}.caption`, "caption must be a string");
+    }
+    if (caption.trim() === "") {
+      // composeScene drops empty captions silently; surface the authoring mistake instead.
+      throw new ScriptParseError(`${path}.caption`, "caption must be non-empty (omit the field instead)");
+    }
   }
   return { layers, caption: caption as string | undefined };
 }

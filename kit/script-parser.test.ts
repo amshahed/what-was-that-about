@@ -140,6 +140,22 @@ describe("parseScript — errors", () => {
       "SFX tag missing name",
     );
   });
+
+  it("rejects a manual caption layer (composeScene auto-appends from scene.caption)", () => {
+    expectThrow(
+      "id: x\ntone: light\nbeats: [{narration: x, scene: {layers: [{component: bg:office-wall}, {component: caption, props: {text: hi}}]}}]",
+      "$.beats[0].scene.layers[1].component",
+      "top-level",
+    );
+  });
+
+  it("rejects empty caption (would be silently dropped by composeScene)", () => {
+    expectThrow(
+      'id: x\ntone: light\nbeats: [{narration: x, scene: {layers: [{component: bg:office-wall}], caption: "   "}}]',
+      "$.beats[0].scene.caption",
+      "non-empty",
+    );
+  });
 });
 
 describe("parseScript — sample episode", () => {
