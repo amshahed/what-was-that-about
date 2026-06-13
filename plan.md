@@ -38,7 +38,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | Issue | Slice | Type | Blocked by | Status |
 |------:|-------|------|-----------|:------:|
 | **#1** | *Parent PRD* | — | — | 📋 spec |
-| #2 | Foundation: scaffold + render-stack decision + house-style spike + CI | **HITL** | — | ⬜ |
+| #2 | Foundation: scaffold + render-stack decision + house-style spike + CI | **HITL** | — | 🟨 PR open · style sign-off pending |
 | #3 | End-to-end tracer-bullet video | AFK | #2 | ⬜ |
 | #4 | Component kit + composition API | AFK | #2 | ⬜ |
 | #5 | Script / Edit-Decision-List format + parser | AFK | #4 | ⬜ |
