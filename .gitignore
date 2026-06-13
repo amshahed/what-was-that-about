@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# build output
+dist/
+build/
+.cache/
+.remotion/
+
+# rendered media & episode artifacts (large/binary)
+out/
+episodes/**/out/
+episodes/**/audio/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.png
+!**/samples/**.png
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# os / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
