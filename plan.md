@@ -40,8 +40,8 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | **#1** | *Parent PRD* | — | — | 📋 spec |
 | #2 | Foundation: scaffold + render-stack decision + house-style spike + CI | **HITL** | — | 🟩 tech merged · ⚠️ style sign-off pending |
 | #3 | End-to-end tracer-bullet video | AFK | #2 | ⬜ |
-| #4 | Component kit + composition API | AFK | #2 | 🟨 in progress |
-| #5 | Script / Edit-Decision-List format + parser | AFK | #4 | ⬜ |
+| #4 | Component kit + composition API | AFK | #2 | 🟩 merged |
+| #5 | Script / Edit-Decision-List format + parser | AFK | #4 | 🟨 in progress |
 | #6 | Script → stills batch render | AFK | #4, #5 | ⬜ |
 | #7 | Whisper forced alignment | AFK | #5 | ⬜ |
 | #8 | Assembly v1: synced rough-cut with motion | AFK | #6, #7 | ⬜ |
