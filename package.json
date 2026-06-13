@@ -7,6 +7,7 @@
   "scripts": {
     "studio": "remotion studio render/remotion/index.ts",
     "render:samples": "tsx scripts/render-samples.ts",
+    "render:script": "tsx scripts/render-script.ts",
     "build": "tsx scripts/bundle.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
