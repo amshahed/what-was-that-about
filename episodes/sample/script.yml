@@ -1,0 +1,48 @@
+# A throwaway sample script for the format. Real episodes live in episodes/<book>/script.yml.
+# See kit/SCRIPT.md for the full schema and tag grammar.
+
+id: sample-episode
+tone: balanced
+
+beats:
+  - narration: |
+      Cold open. The god of the sea, doing paperwork. We do not love it.
+    scene:
+      layers:
+        - component: bg:cave-office
+        - component: prop:trident
+          props: { cx: 650, topY: 300, bottomY: 720 }
+        - component: actor:poseidon
+          props: { x: 760, y: 430, pose: sitting }
+        - component: prop:desk
+          props: { x: 600, y: 620, w: 720, h: 200 }
+        - component: prop:papers
+          props: { x: 860, y: 628 }
+        - component: prop:pen
+          props: { x: 884, y: 612 }
+      caption: "Poseidon. God of the sea. Still can't escape the 9 to 5."
+    tags: [HOLD]
+
+  - narration: |
+      Once, he ruled the oceans.
+    scene:
+      layers:
+        - component: bg:sea-glory
+        - component: prop:trident
+          props: { cx: 1060, topY: 150, bottomY: 400 }
+        - component: actor:poseidon
+          props: { x: 940, y: 300, pose: glory, longHair: true, beard: true }
+      caption: "Once, he ruled the oceans."
+    tags: [ZOOM]
+
+  - narration: |
+      Now he rules a three p.m. sync.
+    scene:
+      layers:
+        - component: bg:office-wall
+        - component: actor:poseidon
+          props: { x: 820, y: 360, pose: tie, tie: true, beard: true }
+        - component: prop:watch
+          props: { x: 850, y: 372 }
+      caption: "Now he rules... a 3 p.m. sync."
+    tags: ["SFX:record-scratch"]
