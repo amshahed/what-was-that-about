@@ -8,7 +8,7 @@ export const poseidonGlorySpec: SceneSpec = {
   layers: [
     { component: "bg:sea-glory" },
     { component: "prop:trident", props: { cx: 1060, topY: 150, bottomY: 400 } },
-    { component: "actor:poseidon", props: { x: 940, y: 300, pose: "glory", longHair: true } },
+    { component: "actor:poseidon", props: { x: 940, y: 300, pose: "glory", longHair: true, beard: true } },
   ],
   caption: "Once, he ruled the oceans.",
 };

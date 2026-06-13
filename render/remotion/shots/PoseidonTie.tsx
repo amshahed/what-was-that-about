@@ -7,7 +7,7 @@ export const poseidonTieSpec: SceneSpec = {
   id: "poseidon-tie",
   layers: [
     { component: "bg:office-wall" },
-    { component: "actor:poseidon", props: { x: 820, y: 360, pose: "tie", tie: true } },
+    { component: "actor:poseidon", props: { x: 820, y: 360, pose: "tie", tie: true, beard: true } },
     { component: "prop:watch", props: { x: 850, y: 372 } },
   ],
   caption: "Now he rules... a 3 p.m. sync.",

@@ -4,6 +4,7 @@
 
 import type { ReactElement } from "react";
 import { get, has, ids } from "./registry";
+import "./library"; // side-effect: guarantees every component is registered before composeScene is called
 
 export interface Layer {
   /** Registered component id, e.g. "bg:cave-office", "actor:poseidon", "prop:trident". */
