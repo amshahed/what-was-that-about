@@ -42,8 +42,8 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #3 | End-to-end tracer-bullet video | AFK | #2 | ⬜ |
 | #4 | Component kit + composition API | AFK | #2 | 🟩 merged |
 | #5 | Script / Edit-Decision-List format + parser | AFK | #4 | 🟩 merged |
-| #6 | Script → stills batch render | AFK | #4, #5 | 🟨 in progress |
-| #7 | Whisper forced alignment | AFK | #5 | ⬜ |
+| #6 | Script → stills batch render | AFK | #4, #5 | 🟩 merged |
+| #7 | Whisper forced alignment (**engine locked: OpenAI Whisper API** — see PRD §8.3) | AFK | #5 | ⬜ |
 | #8 | Assembly v1: synced rough-cut with motion | AFK | #6, #7 | ⬜ |
 | #9 | Burned-in animated captions | AFK | #8 | ⬜ |
 | #10 | Music bed + SFX (tone-tag-driven) | AFK | #8 | ⬜ |
@@ -64,19 +64,40 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 
 ---
 
-## Tech stack (from PRD §8)
+## Tech stack (from PRD §8, locked)
 - **Language:** TypeScript.
-- **Visuals:** SVG components styled with **Rough.js** (hand-drawn look); recurring-character consistency via reusable components.
-- **Render/assembly:** **Remotion** (lead candidate) or SVG→PNG + **FFmpeg** — decided in #2.
-- **Audio sync:** **Whisper** forced alignment (WhisperX / stable-ts).
-- **Output:** 16:9 long-form + 9:16 Shorts from the same components.
+- **Visuals:** SVG components styled with **Rough.js** (hand-drawn look); recurring-character consistency via reusable components; casting doctrine — *cast existing first, custom last* (PRD §6.0).
+- **Render/assembly:** **Remotion — locked** (PRD §8.4). FFmpeg-only fallback rejected.
+- **Audio sync:** **OpenAI Whisper API — locked** (PRD §8.3). Single-file boundary; swap-out to local WhisperX deferred and reversible.
+- **Audio contract:** WAV mono 44.1 kHz 16-bit, peak `-6..-3` dBFS; pipeline normalizes to **-14 LUFS**.
+- **Output:** 16:9 long-form + 9:16 Shorts from the same components. Two Shorts pipelines: **A** auto-suggested per episode, **B** standalone at repo root `shorts/<id>/` (PRD §7.7).
+- **Episode id convention:** **slug-only** (`ubik`, not `01-ubik`).
+
+## Locked design decisions (2026-06-15 design pass)
+Captured in PRD; this is the index — see referenced PRD sections for the rationale.
+
+1. **Whisper engine — OpenAI Whisper API** (§8.3). Swap to local WhisperX deferred.
+2. **Tone tags — Light / Balanced / Heavy** (§6.1). `Balanced-Heavy` dropped.
+3. **Captions — two-tier**: line-pop subtitles (always-on) + text-hero emphasis scenes (§9.1). Per-word pop rejected.
+4. **§6.0 Visual storytelling principle**: images carry the message — unbounded visual vocabulary, not locked to stick-figure scenes.
+5. **Casting doctrine** (§6.0): cast existing first, custom last.
+6. **Audio contract** (§8.3): WAV mono 44.1 kHz 16-bit, `-6..-3` dBFS peak, normalize to -14 LUFS.
+7. **Shorts — two pipelines** (§7.7): A auto-suggested per episode under `episodes/<slug>/shorts/`; B standalone at repo root `shorts/<id>/`.
+8. **Channel name** — *deferred* (§18); "What Was That About" working title fine for now.
+9. **Episode structure — 5-section tag-based template** (§6.4): cold-open, spoiler-warn-and-setup, recap, analysis, verdict.
+10. **Pilot — Ubik** (§20), tone tag **Heavy**.
+11. **Episode id convention — slug-only** (§8.5).
+12. **Palette — unified across the channel** (§9.2), not tone-driven per book.
+13. **Intro / outro bumper — no default bumper on the pilot** (§9.2, §18); creative-design task deferred.
+14. **Fact-check artifact** (§7 stage 3b, §8.5): `episodes/<slug>/notes/factcheck.md` must contain `Status: ✅ approved` — assembly refuses to run otherwise. Hard render gate.
 
 ## North-star constraints (don't violate)
 - **Effort is a continuation gate** (PRD §13): drive per-episode *user* effort toward zero; episode #2 must be far easier than #1.
-- **Accuracy gate** (PRD §7, 3b): user fact-check is required before any episode ships.
+- **Accuracy gate** (PRD §7, 3b): the `Status: ✅ approved` line in `notes/factcheck.md` is a hard render gate.
 - **Tone dial, constant voice** (PRD §6.1): adapt depth per book; keep the dry narrator voice constant.
+- **Images carry the message** (PRD §6.0): visual vocabulary is unbounded; the hand-wobble Rough.js style is the *aesthetic*, not a restriction on *what* can be on screen.
 
 ---
 
 ## Next action
-Begin **#2 (Foundation)** → write `plans/2-foundation.md`, get approval, then build.
+Begin **#7 (Whisper forced alignment)** — engine is locked (OpenAI Whisper API). Write `plans/7-whisper-alignment.md`, get approval, then build behind the single-file boundary described in PRD §8.3.

@@ -43,6 +43,11 @@ People who **have read the book** (or are reading it / don't mind spoilers) and 
 
 ## 6. Content design
 
+### 6.0 Visual storytelling principle (load-bearing)
+**The images carry the message.** The narrator's voice and the picture on screen work together to land *every* point — humor, opinion, contrast, important note, emphasis, whatever. The visual vocabulary is therefore **unbounded**: not locked to stick-figure scenes. A beat's image can be a scene, a giant pull-quote, a graph, an arrow-and-pointer diagram, a single huge question mark, a bold number filling the frame — whatever best supports what the voice is saying. The Rough.js house style is the *aesthetic* (hand-wobbled, drawn-in-MS-Paint feel); it is **not** a restriction on *what* can be on screen.
+
+**Casting doctrine: cast existing first, custom last.** When a beat needs a character, the default is to **reuse an existing actor** (recurring narrator/mascot, recurring per-book figures already in the kit). Only introduce a new custom character when the beat genuinely requires it. Reusable cast is what makes recurring-character gags possible and is a major component of channel identity — every custom character we add dilutes that, so the bar is high.
+
 ### 6.1 Tone system (adaptive, per book)
 Every book gets a **tone tag** in pre-production that sets joke density, runtime, and visual-gag frequency:
 
@@ -56,7 +61,7 @@ Every book gets a **tone tag** in pre-production that sets joke density, runtime
 
 **Setting the tag — recency + how much you have to say:** the tag is also a practical scheduling lever, not just a judgment of the book's weight. Read it recently / lots of opinions → **Heavy** (analysis-forward). Read it ages ago / it was just fun → **Light** (funny-recap-forward, lighter take). Same single-video format every time; you turn the dial to match your actual energy and material. Crucially, **the analysis *research* is Claude's job, not yours** — author background, critical landscape, common interpretations, flagged ambiguities. You supply the *take + reactions + fact-check*, which you have for free from having read it. So a deeper-analysis episode is **not** a research tax on you; the dial mostly changes how much I tee up and how much you riff.
 
-> *Ubik* pilot tag: **Balanced, leaning Heavy** (metaphysical head-trip, but PKD is pulpy and funny — room to play).
+> *Ubik* pilot tag: **Heavy** (metaphysical head-trip — analysis-forward, humor sprinkled).
 
 ### 6.2 Runtime
 **Anchor 4–8 min, flex up to ~10** for Heavy books. Light books can be 4–6. Script ~700–1,500 words; ~25–60 stills. (Heavy episodes still cross YouTube's 8-min mid-roll threshold.) Pilot target: **~8–10 min.**
@@ -67,13 +72,15 @@ Every book gets a **tone tag** in pre-production that sets joke density, runtime
 - a short **spoiler-free cold open** ("is this worth your time?") so the unread aren't excluded.
 
 ### 6.4 Episode template (the repeatable skeleton)
-1. **Cold open / hook** (spoiler-free) — a sharp, funny entry point. Source of the Short(s).
-2. **Spoiler warning** (branded bit).
-3. **Setup** — premise, vibe, "what you're in for."
-4. **Summary beats** — the plot, compressed, with gags.
-5. **Analysis / themes** — the substance; the "why this book messes with you."
-6. **Ending explained** — the payoff.
-7. **Verdict / outro** — the honest personal take + sign-off.
+A **tag-based 5-section template**. Each section is delimited in the script with a `[SECTION: ...]` tag so the parser, the renderer, and the Shorts auto-cut all know where the seams are.
+
+1. **`[SECTION: cold-open]`** — spoiler-free hook. Source of the Short(s) Pipeline A suggestions (see §7.7).
+2. **`[SECTION: spoiler-warn-and-setup]`** — branded spoiler warning + premise / vibe / "what you're in for."
+3. **`[SECTION: recap]`** — the plot, compressed, with gags.
+4. **`[SECTION: analysis]`** — themes + ending explained, integrated. The substance and the payoff.
+5. **`[SECTION: verdict]`** — honest personal take + sign-off.
+
+Sections compose with the EDL tags (`[HOLD]`, `[ZOOM]`, `[SFX]`) inside them — sections are coarse seams; EDL tags are fine-grained per-beat instructions (see §8.2).
 
 ### 6.5 Summary vs. analysis: one integrated video per book
 **Default: one video per book that integrates summary + analysis** (the §6.4 arc). The recap is the setup that *earns* the analysis — splitting them creates redundant re-summarizing (you can't explain an ending without restating it), so integrating is strictly more efficient. Depth flexes via the tone tag (§6.1), not via a separate format.
@@ -92,16 +99,24 @@ Stages flow **seed → research → script → visuals → audio → assembly �
 | 1 | **Seed / brain-dump** | U | User dumps his take: summary, hot-takes, the bits that struck him, anything that *must* be in there. |
 | 2 | **Research & synthesis** | C | Claude combines own knowledge + a web research pass (Wikipedia, study guides, essays, Reddit, YouTube) to map the "landscape take" and spot angles others missed. Synthesizes — never copies. |
 | 3 | **Script draft** | C | Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. |
-| 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy. **Required gate** — accuracy is do-or-die for an analysis channel. |
+| 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file contains `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
 | 4 | **Visual generation** | C | Compose each beat from the code component kit → render to PNG (see §8). |
-| 5 | **Audio recording** | U | User records himself reading the approved script (basic mic, quiet room). |
-| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery; FFmpeg/render builds the rough cut (Ken Burns, burned-in captions, music, SFX). User does a **light polish** pass only on comedic-timing beats. |
-| 7 | **Shorts** | C + U | Auto-cut 1–3 vertical clips from the punchiest/most meme-recognizable beats. User picks which. |
+| 5 | **Audio recording** | U | User records himself reading the approved script. **Audio contract:** WAV, mono, 44.1 kHz, 16-bit, peak in `-6` to `-3` dBFS, quiet room (see §8.3). |
+| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**OpenAI Whisper API** — locked engine, see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX, audio normalized to -14 LUFS). User does a **light polish** pass only on comedic-timing beats. |
+| 7 | **Shorts** | C + U | **Two pipelines** — see §7.7. **(A) Auto-suggested:** post-long-form, Claude proposes 1–3 candidate cuts (intro hook, mid-video bit, etc.) from the cold-open and tagged beats; user picks. **(B) Custom:** standalone Shorts authored at repo root `shorts/<id>/` — can slice from anywhere across episodes, with their own music/voice; lighter-weight pipeline. |
 | 8 | **Publish** | U | Title, thumbnail, description/tags, upload, schedule. |
+
+### 7.7 Shorts — two pipelines
+Discovery is the point of Shorts, so we run two parallel tracks rather than over-constraining one:
+
+- **Pipeline A — auto-suggested (per episode).** After the long-form is locked, Claude scans the script + the rendered cut and proposes **1–3 candidate Shorts** keyed off what the episode actually delivered: an intro-hook cut (the cold open verbatim), a mid-video bit (a sharp gag or contrast moment), or an enticing-hook cut (a curiosity opener stitched from later beats). User picks one or more; Claude renders. Lives under `episodes/<slug>/shorts/`.
+- **Pipeline B — custom Shorts (standalone).** Authored at repo root `shorts/<id>/` (own seed/script/audio/out). Can slice from multiple episodes, can be a riff that isn't in any long-form, and can have its own music/voice/cast. Lighter-weight, faster to ship, and the channel's signal-boost vehicle between long-form drops.
+
+Both pipelines share the component kit and renderer; the difference is *authoring shape*, not infrastructure.
 
 ## 8. Technical architecture (the software to build)
 
-The visual + assembly layers are **real code living in this workspace** (`/Users/sh/workspace/book-summary`). This is what makes the pipeline repeatable and pushes the user's effort toward zero.
+The visual + assembly layers are **real code living in this workspace** (`/Users/sh/workspace/what-was-that-about`). This is what makes the pipeline repeatable and pushes the user's effort toward zero.
 
 ### 8.1 Visual component kit
 - **Substrate:** code-defined SVG components, not a Canva library.
@@ -120,34 +135,65 @@ The script is the single source of truth for the edit. Each beat carries: narrat
 - `[SFX: record scratch]` — sound sting
 This lets assembly be comedic-timing-aware *automatically*, without manual editing.
 
-### 8.3 Audio sync
-User records reading the script → **forced alignment** (Whisper word-level timestamps, e.g. WhisperX / stable-ts) maps each beat to *when he actually said it* → cut points snap to real delivery.
+### 8.3 Audio sync (and audio contract)
 
-### 8.4 Rendering / assembly — recommended stack
-- **Primary recommendation: Remotion** (React-based programmatic video). Our SVG/Rough.js components drop straight in; it natively handles Ken Burns, burned-in animated captions, audio track, and SFX, and produces the final MP4 via headless Chrome + FFmpeg. Best fit for "videos defined in code." Both 16:9 (long-form) and 9:16 (Shorts) render from the same components → near-free vertical reframe.
-- **Lighter-weight fallback:** static SVG→PNG (resvg/sharp) + **FFmpeg** (`zoompan` for Ken Burns, `drawtext`/subtitle burn for captions, `amix` for music/SFX). Less elegant, fewer deps.
-- *(Stack choice is Claude's call at build time; Remotion is the lead candidate.)*
+**Engine — locked: OpenAI Whisper API.** User records reading the script → the audio is sent to the OpenAI transcription API with word-level timestamps → each script beat is mapped to *when he actually said it* → cut points snap to real delivery. Chosen for **zero install tax + portability** (works from any machine the user opens a laptop on, not just a GPU desktop). Cost is negligible at our cadence (≈$0.06 per ~8-min episode → ≈$1.56/year at biweekly).
 
-### 8.5 Repo shape (proposed)
+> **Swap-out path (deferred, not blocking).** The alignment step is structured as a single boundary — a function with `audio → word-timestamps` semantics, no other code aware of the engine. To switch to a local engine later (e.g. **WhisperX** on the user's RTX 3080 desktop, for cost or offline reasons), only that one file changes. Cleanly reversible.
+
+**Audio contract (Stage 5 deliverable):** WAV, **mono**, **44.1 kHz**, **16-bit**, peak in `-6` to `-3` dBFS, quiet room. The assembly pipeline then normalizes the final mix to **-14 LUFS** (YouTube's loudness target). One file per episode (whole script in one take, retakes inlined — alignment + tagging handle the rest).
+
+### 8.4 Rendering / assembly — locked stack
+**Locked: Remotion** (React-based programmatic video). Our SVG/Rough.js components drop straight in; it natively handles Ken Burns, burned-in animated captions, audio track, and SFX, and produces the final MP4 via headless Chrome + FFmpeg. Best fit for "videos defined in code." Both 16:9 (long-form) and 9:16 (Shorts) render from the same components → near-free vertical reframe.
+
+> Lighter-weight SVG→PNG + FFmpeg path was considered as a fallback and **rejected** — Remotion's React composition model is the right altitude for this project; FFmpeg-only would force us to re-implement what Remotion gives for free, with worse ergonomics for the EDL → render path.
+
+### 8.5 Repo shape (locked layout)
+
+**Episode id convention: slug-only** (e.g. `ubik`, not `01-ubik` or `2026-06-ubik`). Episodes are individually meaningful and discoverable by book; sequential numbering would only complicate reorders and re-shoots. The slug is the source of truth.
+
 ```
-book-summary/
+what-was-that-about/
   PRD.md
+  plan.md
   kit/            # SVG component library (actors, props, backgrounds, memes) + Rough.js styling
   episodes/
-    ubik/
-      seed.md     # user brain-dump
-      research.md # Claude's synthesis + sources
-      script.md   # narration + EDL tags + per-beat compositions
-      audio/      # user recordings
-      out/        # rendered stills, rough cut, shorts
-  render/         # Remotion project (or ffmpeg scripts) + alignment step
+    <slug>/       # e.g. ubik/
+      seed.md         # user brain-dump
+      research.md     # Claude's synthesis + sources
+      script.md       # narration + [SECTION:...] + EDL tags + per-beat compositions (see §6.4, §8.2)
+      notes/
+        factcheck.md  # required gate file — must contain `Status: ✅ approved` before assembly runs
+      audio/          # WAV mono 44.1k/16-bit, -6..-3 dBFS peak (see §8.3)
+      out/            # rendered stills, rough cut, final cut
+      shorts/         # Pipeline A — auto-suggested Shorts derived from this episode
+  shorts/         # Pipeline B — standalone custom Shorts authored at repo root
+    <id>/
+      seed.md
+      script.md
+      audio/
+      out/
+  render/         # Remotion project + alignment step (OpenAI Whisper API boundary)
   shared/         # tone presets, caption styles, music/SFX, brand tokens
 ```
 
-## 9. Captions, music & SFX (defaults — adjustable)
-- **Captions:** burned-in, animated, keyword-emphasis style (strong retention lever, on-brand). Generated from the script for free.
-- **Music:** royalty-free bed, mood-matched to the tone tag.
+## 9. Captions, music & SFX
+
+### 9.1 Captions — two-tier design (locked)
+
+We do **not** use per-word pop captions (TikTok-style). They feel childish/unserious for an analysis channel and fight the visual for attention. Instead, two tiers — one always-on, one selective:
+
+1. **Line-pop subtitles (always on).** Burned-in, animated **one-line-at-a-time** captions running the full episode. Generated from the script + word-timestamps; ships free with the alignment step. Retention-friendly, accessible, and tonally calm — it disappears into the background.
+2. **Text-hero emphasis scenes (selective).** When a beat needs emphasis, the **image *is* the emphasis** — a big bold word / number / phrase fills the frame as the actual scene (e.g. **3,000 YEARS** in giant red type over a clean background, or a single huge **`?`**). This replaces the picture for that beat; it's a visual choice in the script, not a caption styling toggle. Author by composing the emphasis as a normal beat in the kit (see §6.0 — images carry the message).
+
+The two tiers complement: subtitles handle the unbroken accessibility/retention layer; emphasis scenes handle the comic / dramatic punch points.
+
+### 9.2 Music & SFX (defaults — adjustable)
+
+- **Music:** royalty-free bed, mood-matched to the **tone tag** (Light / Balanced / Heavy each get a small pre-curated palette in `shared/music/`).
 - **SFX:** small comedic library (boings, record scratches, dings) triggered by `[SFX]` tags.
+- **Palette:** color/brand palette is **unified across the channel** (not tone-driven, not per-book). Brand recognition wins; the tone tag moves the *music* dial, not the *visual palette* dial.
+- **Intro / outro bumper:** **no default bumper** on the pilot. A signature bumper is a creative-design task that is intentionally deferred (see §18); shipping the pilot does not depend on it. When designed, it will live in `shared/bumpers/` and slot in via the renderer.
 
 ## 10. Meme strategy
 - **Default:** redraw meme **formats** in house style (safer on copyright, monetization-friendly, on-brand, reusable).
@@ -184,9 +230,9 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 | **3 — Growth** | Long term | Subscribers / views. (Views are the ultimate point — just not the *early* yardstick.) |
 
 ## 15. Costs & tools
-- **Pipeline:** free / open-source (Rough.js, Remotion or FFmpeg, Whisper, royalty-free assets).
+- **Pipeline:** mostly free / open-source (Rough.js, Remotion, royalty-free assets).
 - **One-time:** a decent USB mic (~$50–100) for clean narration. *(Open item: confirm mic situation.)*
-- **Ongoing:** ~$0 mandatory. Optional later: paid music library, thumbnail tooling.
+- **Ongoing:** **~$1.56 / year** — the OpenAI Whisper API for forced alignment (≈$0.06 per ~8-min episode × biweekly cadence). Effectively a rounding error vs. the value of zero-setup portability. Optional later: paid music library, thumbnail tooling.
 
 ## 16. Legal / copyright / monetization
 - **Book content:** summary + analysis = transformative / fair use. We synthesize, never reproduce the text.
@@ -208,10 +254,11 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 | **Meme copyright/monetization** | House-style default; monitor real-meme usage. |
 
 ## 18. Open items / deferred (not blocking)
-- **Channel name & handle** (working title above — brainstorm separately).
-- **Narrator mascot / persona** design (affects kit; the recurring "narrator" stick figure).
+- **Channel name & handle** — *intentionally deferred*; the repo / working title "What Was That About" is fine for now. Decided not to block design lock on it.
+- **Narrator mascot / persona** design (affects kit; the recurring "narrator" stick figure). Deferred — pilot can ship without a fixed mascot; the casting doctrine (§6.0) still applies.
+- **Intro / outro bumper** — no default bumper on the pilot (see §9.2); creative-design task deferred.
 - **Thumbnail & title style** guide (SEO + click-through; best-practice defaults for now).
-- **Mic check** — confirm recording setup.
+- **Mic check** — confirm recording setup matches the audio contract in §8.3.
 
 ## 19. Roadmap
 
@@ -220,7 +267,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - Exit: a throwaway 60-sec test renders end-to-end from a fake script + scratch audio.
 
 **Phase 1 — Ubik pilot** *(full pipeline dry-run)*
-- User seed → research → script (Balanced-Heavy) → fact-check → render → record → assemble → polish → 1–3 Shorts.
+- User seed → research → script (**Heavy** tone) → fact-check (`Status: ✅ approved`) → render → record → assemble → polish → Pipeline A Shorts.
 - Exit: a video the user is proud of; effort logged.
 
 **Phase 2 — Buffer & launch**
@@ -231,9 +278,9 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - Watch retention; iterate hooks/length/thumbnails; expand kit; tighten automation; reduce User effort further.
 
 ## 20. Pilot spec — *Ubik*
-- **Tone tag:** Balanced, leaning Heavy.
+- **Tone tag:** **Heavy** (analysis-forward; humor sprinkled).
 - **Angle candidates (to refine from user's seed):** the half-life / reality-decay as the hook; "who's actually dead?"; Ubik-as-product (the spray-can savior) as satire of consumerism/faith; the entropy-as-villain read; the ending's ambiguity (Joe vs. Glen Runciter coins). Cold open plays the corporate-mundane-vs-cosmic gag (very on-brand for the Poseidon-style bit).
-- **Deliverable:** ~8–10 min long-form + 1–3 Shorts.
+- **Deliverable:** ~8–10 min long-form + 1–3 Pipeline A Shorts.
 
 ---
 
