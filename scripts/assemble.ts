@@ -7,6 +7,7 @@
 // Writes: episodes/<slug>/out/roughcut.mp4
 
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { readFileSync, existsSync, statSync, mkdirSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
@@ -91,7 +92,7 @@ async function main() {
 
   const inputProps: RoughCutProps = {
     beats,
-    audioSrc: path.resolve(audioPath),
+    audioSrc: pathToFileURL(path.resolve(audioPath)).href,
     totalFrames,
   };
   // Remotion's inputProps type requires Record<string, unknown>; cast once here.

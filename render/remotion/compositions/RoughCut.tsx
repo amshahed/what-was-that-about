@@ -24,7 +24,7 @@ const ZoomedScene: FC<{ spec: SceneSpec; durationFrames: number }> = ({ spec, du
 
 export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc }) => (
   <AbsoluteFill>
-    <Audio src={`file://${audioSrc}`} />
+    <Audio src={audioSrc} />
     {beats.map((beat, i) => (
       <Sequence key={i} from={beat.startFrame} durationInFrames={beat.durationFrames}>
         {beat.zoom ? (

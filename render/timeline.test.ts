@@ -52,7 +52,7 @@ describe("mapBeatsToTimeline", () => {
     expect(entry!.durationFrames).toBe(135);           // 5.0s - 0.5s = 4.5s = 135 frames
   });
 
-  it("HOLD adds 1.5s (45 frames at 30fps) to durationFrames", () => {
+  it("HOLD flag is preserved but does not extend durationFrames (no Sequence overlap)", () => {
     const beats = [beat("punch line here", { hold: true }), beat("next beat follows")];
     const aln = alignment([
       { word: "punch", start: 0.0, end: 0.3 },
@@ -61,11 +61,26 @@ describe("mapBeatsToTimeline", () => {
       { word: "next", start: 1.0, end: 1.2 },
       { word: "beat", start: 1.3, end: 1.5 },
       { word: "follows", start: 1.6, end: 1.9 },
-    ], 3.0);  // duration=3.0 so hold bonus isn't capped
+    ], 3.0);
 
     const entries = mapBeatsToTimeline(beats, aln, FPS);
-    // Natural duration beat[0]: 1.0 - 0.0 = 1.0s = 30 frames; +45 hold = 75 frames total
-    expect(entries[0]!.durationFrames).toBe(75);
+    expect(entries[0]!.hold).toBe(true);
+    // Natural duration: beat[0] start=0.0s, beat[1] start=1.0s → 30 frames (no extension)
+    expect(entries[0]!.durationFrames).toBe(30);
+  });
+
+  it("fallback places missed beat at prevEnd (matched word end), not at previous beat's start", () => {
+    // First beat matches "anchor" at 2.0s (end 2.4s). Second beat missed.
+    // Old formula: startSecs[1] = startSecs[0] + remaining * (1 - 1) = 2.0s (same as first beat).
+    // New formula: startSecs[1] = prevEnd = 2.4s (correct: starts after the matched word).
+    const beats = [beat("anchor this moment"), beat("xylophone quasar nebula")];
+    const aln = alignment([
+      { word: "anchor", start: 2.0, end: 2.4 },
+    ], 6.0);
+
+    const entries = mapBeatsToTimeline(beats, aln, FPS);
+    // Second beat starts at prevEnd = 2.4s = 72 frames, NOT at 2.0s (60 frames)
+    expect(entries[1]!.startFrame).toBe(Math.round(2.4 * FPS));
   });
 
   it("ZOOM flag is preserved", () => {
