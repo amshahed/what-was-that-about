@@ -3,12 +3,18 @@ import { AbsoluteFill, Audio, Sequence, useCurrentFrame, interpolate } from "rem
 import { SceneCanvas } from "../SceneCanvas";
 import { CaptionTrack } from "./CaptionTrack";
 import { buildCaptionLines } from "../../captions";
+import { musicVolumeAtFrame, type SfxEvent } from "../../mix";
 import type { BeatEntry } from "../../timeline";
 import type { SceneSpec } from "../../../kit/scene";
+
+// Duration in frames allocated for each SFX sting (covers up to ~3s clips at 30fps).
+const SFX_DURATION_FRAMES = 90;
 
 export interface RoughCutProps {
   beats: BeatEntry[];
   audioSrc: string;
+  musicSrc: string;
+  sfxEvents: SfxEvent[];
   totalFrames: number;
 }
 
@@ -24,11 +30,23 @@ const ZoomedScene: FC<{ spec: SceneSpec; durationFrames: number }> = ({ spec, du
   );
 };
 
-export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc }) => {
+export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc, musicSrc, sfxEvents }) => {
   const captionLines = buildCaptionLines(beats);
   return (
     <AbsoluteFill>
       <Audio src={audioSrc} />
+      {musicSrc && (
+        <Audio
+          src={musicSrc}
+          volume={(f) => musicVolumeAtFrame(f, beats)}
+          loop
+        />
+      )}
+      {sfxEvents.map((sfx, i) => (
+        <Sequence key={i} from={sfx.startFrame} durationInFrames={SFX_DURATION_FRAMES}>
+          <Audio src={sfx.src} />
+        </Sequence>
+      ))}
       {beats.map((beat, i) => (
         <Sequence key={i} from={beat.startFrame} durationInFrames={beat.durationFrames}>
           {beat.zoom ? (
@@ -48,5 +66,7 @@ export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc }) => {
 export const ROUGH_CUT_DEFAULT_PROPS: RoughCutProps = {
   beats: [],
   audioSrc: "",
+  musicSrc: "",
+  sfxEvents: [],
   totalFrames: 30,
 };
