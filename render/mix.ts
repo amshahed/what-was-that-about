@@ -3,6 +3,7 @@ import type { BeatEntry } from "./timeline";
 
 export const MUSIC_VOLUME_FULL = 0.12;
 export const MUSIC_VOLUME_DUCK = 0.04;
+export const SFX_DURATION_FRAMES = 90;
 
 // Tone tag → music bed filename (placed in shared/music/).
 export const TONE_MUSIC: Record<Tone, string> = {

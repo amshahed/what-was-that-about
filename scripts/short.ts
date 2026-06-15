@@ -8,12 +8,13 @@
 
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { readFileSync, existsSync, statSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
 import { mapBeatsToTimeline } from "../render/timeline";
 import { TONE_MUSIC, SFX_FILES, buildSfxEvents } from "../render/mix";
+import { resolveEpisodeDir, requireFile, checkFactgate } from "./lib/episode";
 import type { AlignmentResult } from "../render/align";
 import type { ShortsProps } from "../render/remotion/compositions/Shorts";
 
@@ -23,39 +24,6 @@ function usage(): never {
   console.error("usage: tsx scripts/short.ts <episode-slug-or-dir> <start-beat> <end-beat>");
   console.error("  start-beat, end-beat: 0-based indices into the script's beat list");
   process.exit(2);
-}
-
-function resolveEpisodeDir(arg: string): string {
-  const asDirect = path.resolve(arg);
-  const asSlug = path.resolve("episodes", arg);
-  const candidates = asDirect === asSlug ? [asDirect] : [asSlug, asDirect];
-  for (const candidate of candidates) {
-    if (existsSync(candidate) && statSync(candidate).isDirectory()) return candidate;
-  }
-  console.error(`episode directory not found: tried ${candidates.join(" and ")}`);
-  process.exit(2);
-}
-
-function requireFile(p: string, hint: string): string {
-  if (!existsSync(p)) {
-    console.error(`missing: ${p}`);
-    console.error(hint);
-    process.exit(2);
-  }
-  return p;
-}
-
-function checkFactgate(episodeDir: string): void {
-  const factcheckPath = path.join(episodeDir, "notes", "factcheck.md");
-  requireFile(
-    factcheckPath,
-    'Create episodes/<slug>/notes/factcheck.md containing "Status: ✅ approved" once you have verified the script.',
-  );
-  const content = readFileSync(factcheckPath, "utf8");
-  if (!content.includes("Status: ✅ approved")) {
-    console.error("Render gate: factcheck.md does not contain 'Status: ✅ approved'.");
-    process.exit(2);
-  }
 }
 
 async function main() {

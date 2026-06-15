@@ -1,18 +1,17 @@
 import { type FC, useCallback } from "react";
-import { AbsoluteFill, Audio, Sequence, useCurrentFrame, interpolate } from "remotion";
+import { AbsoluteFill, Audio, Sequence } from "remotion";
 import { PALETTE, STAGE } from "../../../kit/rough/style";
 import { SceneCanvas } from "../SceneCanvas";
+import { ZoomedScene } from "./ZoomedScene";
 import { CaptionTrack } from "./CaptionTrack";
 import { buildCaptionLines } from "../../captions";
-import { musicVolumeAtFrame, type SfxEvent } from "../../mix";
+import { musicVolumeAtFrame, SFX_DURATION_FRAMES, type SfxEvent } from "../../mix";
 import type { BeatEntry } from "../../timeline";
-import type { SceneSpec } from "../../../kit/scene";
 
 const SHORTS_W = 1080;
 const SHORTS_H = 1920;
 // Scale factor to fill the 9:16 frame height from the 16:9 source; center-crops width.
 const SCENE_SCALE = SHORTS_H / STAGE.h;
-const SFX_DURATION_FRAMES = 90;
 
 export interface ShortsProps {
   beats: BeatEntry[];
@@ -30,18 +29,6 @@ export const SHORTS_DEFAULT_PROPS: ShortsProps = {
   musicSrc: "",
   sfxEvents: [],
   totalFrames: 30,
-};
-
-const ZoomedScene: FC<{ spec: SceneSpec; durationFrames: number }> = ({ spec, durationFrames }) => {
-  const frame = useCurrentFrame();
-  const scale = interpolate(frame, [0, Math.max(durationFrames - 1, 1)], [1.0, 1.05], {
-    extrapolateRight: "clamp",
-  });
-  return (
-    <AbsoluteFill style={{ transform: `scale(${scale})`, transformOrigin: "center" }}>
-      <SceneCanvas spec={spec} />
-    </AbsoluteFill>
-  );
 };
 
 export const Shorts: FC<ShortsProps> = ({ beats, audioSrc, audioStartFrame, musicSrc, sfxEvents }) => {
