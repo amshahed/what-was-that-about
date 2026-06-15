@@ -13,6 +13,7 @@ import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
 import { mapBeatsToTimeline } from "../render/timeline";
+import { TONE_MUSIC, SFX_FILES, buildSfxEvents } from "../render/mix";
 import type { AlignmentResult } from "../render/align";
 import type { RoughCutProps } from "../render/remotion/compositions/RoughCut";
 
@@ -87,12 +88,28 @@ async function main() {
   const beats = mapBeatsToTimeline(script.beats, alignment, FPS);
   const totalFrames = Math.ceil(alignment.duration * FPS);
 
+  const musicFile = TONE_MUSIC[script.tone];
+  const musicPath = path.resolve("shared", "music", musicFile);
+  const musicSrc = existsSync(musicPath) ? pathToFileURL(musicPath).href : "";
+  if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);
+
+  const sfxDir = path.resolve("shared", "sfx");
+  const sfxEvents = buildSfxEvents(beats, (name) => {
+    const file = SFX_FILES[name];
+    if (!file) { console.warn(`unknown SFX "${name}" (skipping)`); return null; }
+    const p = path.join(sfxDir, file);
+    if (!existsSync(p)) { console.warn(`SFX file not found: ${p} (skipping)`); return null; }
+    return pathToFileURL(p).href;
+  });
+
   console.log("bundling Remotion...");
   const serveUrl = await bundle({ entryPoint: path.resolve("render/remotion/index.ts") });
 
   const inputProps: RoughCutProps = {
     beats,
     audioSrc: pathToFileURL(path.resolve(audioPath)).href,
+    musicSrc,
+    sfxEvents,
     totalFrames,
   };
   // Remotion's inputProps type requires Record<string, unknown>; cast once here.

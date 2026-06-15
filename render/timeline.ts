@@ -9,6 +9,7 @@ export interface BeatEntry {
   zoom: boolean;
   hold: boolean;
   narration: string;
+  sfx: string[];
 }
 
 // Broad stop-word list; also filter words shorter than 3 chars after normalization.
@@ -87,6 +88,7 @@ export function mapBeatsToTimeline(
       zoom: beat.zoom,
       hold: beat.hold,
       narration: beat.narration,
+      sfx: beat.sfx,
     };
   });
 }

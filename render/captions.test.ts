@@ -10,6 +10,7 @@ function entry(narration: string, startFrame = 0, durationFrames = 30): BeatEntr
     scene: { layers: [] },
     zoom: false,
     hold: false,
+    sfx: [],
   };
 }
 
