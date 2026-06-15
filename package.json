@@ -10,6 +10,7 @@
     "render:script": "tsx scripts/render-script.ts",
     "align": "tsx scripts/align.ts",
     "assemble": "tsx scripts/assemble.ts",
+    "short": "tsx scripts/short.ts",
     "build": "tsx scripts/bundle.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
