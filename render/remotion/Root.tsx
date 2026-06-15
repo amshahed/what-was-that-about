@@ -5,6 +5,7 @@ import { PoseidonGlory } from "./shots/PoseidonGlory";
 import { PoseidonTie } from "./shots/PoseidonTie";
 import { BeatStill, BEAT_STILL_DEFAULT_PROPS } from "./compositions/BeatStill";
 import { RoughCut, ROUGH_CUT_DEFAULT_PROPS, type RoughCutProps } from "./compositions/RoughCut";
+import { Shorts, SHORTS_DEFAULT_PROPS, SHORTS_DIMENSIONS, type ShortsProps } from "./compositions/Shorts";
 import type { ComponentType } from "react";
 
 // Compositions:
@@ -55,6 +56,17 @@ export const RemotionRoot = () => (
       defaultProps={ROUGH_CUT_DEFAULT_PROPS as unknown as Record<string, unknown>}
       calculateMetadata={({ props }) => ({
         durationInFrames: (props as unknown as RoughCutProps).totalFrames,
+      })}
+    />
+    <Composition
+      id="shorts"
+      component={Shorts as unknown as ComponentType<Record<string, unknown>>}
+      fps={30}
+      width={SHORTS_DIMENSIONS.w}
+      height={SHORTS_DIMENSIONS.h}
+      defaultProps={SHORTS_DEFAULT_PROPS as unknown as Record<string, unknown>}
+      calculateMetadata={({ props }) => ({
+        durationInFrames: (props as unknown as ShortsProps).totalFrames,
       })}
     />
   </>

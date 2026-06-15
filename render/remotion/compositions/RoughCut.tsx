@@ -1,14 +1,11 @@
 import { type FC, useCallback } from "react";
-import { AbsoluteFill, Audio, Sequence, useCurrentFrame, interpolate } from "remotion";
+import { AbsoluteFill, Audio, Sequence } from "remotion";
 import { SceneCanvas } from "../SceneCanvas";
+import { ZoomedScene } from "./ZoomedScene";
 import { CaptionTrack } from "./CaptionTrack";
 import { buildCaptionLines } from "../../captions";
-import { musicVolumeAtFrame, type SfxEvent } from "../../mix";
+import { musicVolumeAtFrame, SFX_DURATION_FRAMES, type SfxEvent } from "../../mix";
 import type { BeatEntry } from "../../timeline";
-import type { SceneSpec } from "../../../kit/scene";
-
-// Duration in frames allocated for each SFX sting (covers up to ~3s clips at 30fps).
-const SFX_DURATION_FRAMES = 90;
 
 export interface RoughCutProps {
   beats: BeatEntry[];
@@ -17,18 +14,6 @@ export interface RoughCutProps {
   sfxEvents: SfxEvent[];
   totalFrames: number;
 }
-
-const ZoomedScene: FC<{ spec: SceneSpec; durationFrames: number }> = ({ spec, durationFrames }) => {
-  const frame = useCurrentFrame();
-  const scale = interpolate(frame, [0, Math.max(durationFrames - 1, 1)], [1.0, 1.05], {
-    extrapolateRight: "clamp",
-  });
-  return (
-    <AbsoluteFill style={{ transform: `scale(${scale})`, transformOrigin: "center" }}>
-      <SceneCanvas spec={spec} />
-    </AbsoluteFill>
-  );
-};
 
 export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc, musicSrc, sfxEvents }) => {
   const captionLines = buildCaptionLines(beats);
