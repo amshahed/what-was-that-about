@@ -8,6 +8,7 @@
     "studio": "remotion studio render/remotion/index.ts",
     "render:samples": "tsx scripts/render-samples.ts",
     "render:script": "tsx scripts/render-script.ts",
+    "align": "tsx scripts/align.ts",
     "build": "tsx scripts/bundle.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -18,6 +19,7 @@
   "dependencies": {
     "@remotion/bundler": "^4.0.0",
     "@remotion/renderer": "^4.0.0",
+    "openai": "^6.42.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "remotion": "^4.0.0",
