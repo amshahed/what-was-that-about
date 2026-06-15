@@ -1,5 +1,6 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import OpenAI from "openai";
+import type { TranscriptionVerbose } from "openai/resources/audio/transcriptions";
 
 export interface WordTimestamp {
   word: string;
@@ -12,13 +13,7 @@ export interface AlignmentResult {
   duration: number;
 }
 
-// Whisper verbose_json response shape (subset we use).
-interface WhisperVerboseResponse {
-  duration: number;
-  words?: Array<{ word: string; start: number; end: number }>;
-}
-
-export function parseAlignmentResponse(raw: WhisperVerboseResponse): AlignmentResult {
+export function parseAlignmentResponse(raw: TranscriptionVerbose): AlignmentResult {
   const words: WordTimestamp[] = (raw.words ?? []).map((w) => ({
     word: w.word,
     start: w.start,
@@ -35,6 +30,10 @@ export async function alignAudio(audioPath: string): Promise<AlignmentResult> {
     );
   }
 
+  if (!existsSync(audioPath)) {
+    throw new Error(`audio file not found: ${audioPath}`);
+  }
+
   const client = new OpenAI({ apiKey });
 
   const response = await client.audio.transcriptions.create({
@@ -44,5 +43,5 @@ export async function alignAudio(audioPath: string): Promise<AlignmentResult> {
     timestamp_granularities: ["word"],
   });
 
-  return parseAlignmentResponse(response as unknown as WhisperVerboseResponse);
+  return parseAlignmentResponse(response as TranscriptionVerbose);
 }

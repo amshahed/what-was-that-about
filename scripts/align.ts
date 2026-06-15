@@ -14,16 +14,19 @@ function usage(): never {
 }
 
 function resolveEpisodeDir(arg: string): string {
-  // Accept either the slug ("ubik") or a full path to the episode dir.
-  const asSlug = path.resolve("episodes", arg);
+  // Accept either the slug ("ubik") or a full/relative path to the episode dir.
+  // path.resolve discards earlier segments when it hits an absolute component, so
+  // avoid probing the same path twice when arg is already absolute.
   const asDirect = path.resolve(arg);
+  const asSlug = path.resolve("episodes", arg);
+  const candidates = asDirect === asSlug ? [asDirect] : [asSlug, asDirect];
 
-  for (const candidate of [asSlug, asDirect]) {
+  for (const candidate of candidates) {
     if (existsSync(candidate) && statSync(candidate).isDirectory()) return candidate;
   }
 
-  // Not found as a directory — try treating arg as a slug that doesn't exist yet.
-  console.error(`episode directory not found: tried ${asSlug} and ${asDirect}`);
+  const tried = candidates.join(" and ");
+  console.error(`episode directory not found: tried ${tried}`);
   process.exit(2);
 }
 
@@ -42,12 +45,6 @@ async function main() {
     process.exit(2);
   }
 
-  if (!audioPath.endsWith(".wav")) {
-    console.warn(
-      `warning: expected a .wav file (audio contract §8.3) but got ${path.basename(audioPath)} — proceeding anyway`,
-    );
-  }
-
   console.log(`aligning: ${path.relative(process.cwd(), audioPath)}`);
 
   const result = await alignAudio(audioPath);
@@ -64,6 +61,6 @@ async function main() {
 }
 
 main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.message : err);
+  console.error(err);
   process.exit(1);
 });
