@@ -39,17 +39,17 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 |------:|-------|------|-----------|:------:|
 | **#1** | *Parent PRD* | — | — | 📋 spec |
 | #2 | Foundation: scaffold + render-stack decision + house-style spike + CI | **HITL** | — | 🟩 tech merged · ⚠️ style sign-off pending |
-| #3 | End-to-end tracer-bullet video | AFK | #2 | ⬜ |
-| #4 | Component kit + composition API | AFK | #2 | 🟩 merged |
-| #5 | Script / Edit-Decision-List format + parser | AFK | #4 | 🟩 merged |
-| #6 | Script → stills batch render | AFK | #4, #5 | 🟩 merged |
-| #7 | Whisper forced alignment (**engine locked: OpenAI Whisper API** — see PRD §8.3) | AFK | #5 | ⬜ |
-| #8 | Assembly v1: synced rough-cut with motion | AFK | #6, #7 | ⬜ |
-| #9 | Burned-in animated captions | AFK | #8 | ⬜ |
-| #10 | Music bed + SFX (tone-tag-driven) | AFK | #8 | ⬜ |
-| #11 | Shorts auto-cut (9:16) | AFK | #4, #8, #9 | ⬜ |
-| #12 | Per-episode content workflow scaffolding | AFK | #5 | ⬜ |
-| #13 | Pilot: Ubik episode, end-to-end | **HITL** | #8, #9, #10, #11, #12 | ⬜ |
+| #3 | End-to-end tracer-bullet video | AFK | #2 | 🟩 superseded by #8 |
+| #4 | Component kit + composition API | AFK | #2 | 🟩 merged (PR #16) |
+| #5 | Script / Edit-Decision-List format + parser | AFK | #4 | 🟩 merged (PR #17) |
+| #6 | Script → stills batch render | AFK | #4, #5 | 🟩 merged (PR #18) |
+| #7 | Whisper forced alignment (**engine locked: OpenAI Whisper API** — see PRD §8.3) | AFK | #5 | 🟩 merged (PR #20) |
+| #8 | Assembly v1: synced rough-cut with motion | AFK | #6, #7 | 🟩 merged (PR #21) |
+| #9 | Burned-in animated captions | AFK | #8 | 🟩 merged (PR #22) |
+| #10 | Music bed + SFX (tone-tag-driven) | AFK | #8 | 🟩 merged (PR #23) |
+| #11 | Shorts auto-cut (9:16) | AFK | #4, #8, #9 | 🟩 merged (PR #24) |
+| #12 | Per-episode content workflow scaffolding | AFK | #5 | 🟩 merged (PR #25) |
+| #13 | Pilot: Ubik episode, end-to-end | **HITL** | #8–#12 | ⬜ unblocked |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ |
 
 ### Critical path
@@ -100,4 +100,12 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 ---
 
 ## Next action
-Begin **#7 (Whisper forced alignment)** — engine is locked (OpenAI Whisper API). Write `plans/7-whisper-alignment.md`, get approval, then build behind the single-file boundary described in PRD §8.3.
+**Phase 0 (pipeline skeleton) complete.** All AFK slices (#3–#12) are done.
+
+Next: **#13 (Pilot: Ubik episode, end-to-end)** — HITL. You need to:
+1. Run `npm run new-episode ubik` to scaffold the episode directory.
+2. Fill in `episodes/ubik/seed.md` (angle + tone: Heavy per plan.md locked decision #10).
+3. Draft `episodes/ubik/script.yml`.
+4. Verify facts → set `Status: ✅ approved` in `notes/factcheck.md`.
+5. Record narration → `audio/narration.wav`.
+6. `npm run align ubik` → `npm run assemble ubik`.
