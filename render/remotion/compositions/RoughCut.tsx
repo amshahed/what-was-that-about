@@ -1,6 +1,8 @@
 import type { FC } from "react";
 import { AbsoluteFill, Audio, Sequence, useCurrentFrame, interpolate } from "remotion";
 import { SceneCanvas } from "../SceneCanvas";
+import { CaptionTrack } from "./CaptionTrack";
+import { buildCaptionLines } from "../../captions";
 import type { BeatEntry } from "../../timeline";
 import type { SceneSpec } from "../../../kit/scene";
 
@@ -22,22 +24,26 @@ const ZoomedScene: FC<{ spec: SceneSpec; durationFrames: number }> = ({ spec, du
   );
 };
 
-export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc }) => (
-  <AbsoluteFill>
-    <Audio src={audioSrc} />
-    {beats.map((beat, i) => (
-      <Sequence key={i} from={beat.startFrame} durationInFrames={beat.durationFrames}>
-        {beat.zoom ? (
-          <ZoomedScene spec={beat.scene} durationFrames={beat.durationFrames} />
-        ) : (
-          <AbsoluteFill>
-            <SceneCanvas spec={beat.scene} />
-          </AbsoluteFill>
-        )}
-      </Sequence>
-    ))}
-  </AbsoluteFill>
-);
+export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc }) => {
+  const captionLines = buildCaptionLines(beats);
+  return (
+    <AbsoluteFill>
+      <Audio src={audioSrc} />
+      {beats.map((beat, i) => (
+        <Sequence key={i} from={beat.startFrame} durationInFrames={beat.durationFrames}>
+          {beat.zoom ? (
+            <ZoomedScene spec={beat.scene} durationFrames={beat.durationFrames} />
+          ) : (
+            <AbsoluteFill>
+              <SceneCanvas spec={beat.scene} />
+            </AbsoluteFill>
+          )}
+        </Sequence>
+      ))}
+      <CaptionTrack lines={captionLines} />
+    </AbsoluteFill>
+  );
+};
 
 export const ROUGH_CUT_DEFAULT_PROPS: RoughCutProps = {
   beats: [],
