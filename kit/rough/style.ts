@@ -19,3 +19,5 @@ export const PALETTE = {
 } as const;
 
 export const STAGE = { w: 1920, h: 1080 } as const;
+
+export const CAPTION_FONT = '"Comic Sans MS", "Marker Felt", "Chalkboard SE", cursive';
