@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { type FC, useCallback } from "react";
 import { AbsoluteFill, Audio, Sequence, useCurrentFrame, interpolate } from "remotion";
 import { SceneCanvas } from "../SceneCanvas";
 import { CaptionTrack } from "./CaptionTrack";
@@ -32,18 +32,19 @@ const ZoomedScene: FC<{ spec: SceneSpec; durationFrames: number }> = ({ spec, du
 
 export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc, musicSrc, sfxEvents }) => {
   const captionLines = buildCaptionLines(beats);
+  const musicVolume = useCallback((f: number) => musicVolumeAtFrame(f, beats), [beats]);
   return (
     <AbsoluteFill>
       <Audio src={audioSrc} />
       {musicSrc && (
         <Audio
           src={musicSrc}
-          volume={(f) => musicVolumeAtFrame(f, beats)}
+          volume={musicVolume}
           loop
         />
       )}
       {sfxEvents.map((sfx, i) => (
-        <Sequence key={i} from={sfx.startFrame} durationInFrames={SFX_DURATION_FRAMES}>
+        <Sequence key={`${sfx.startFrame}-${i}`} from={sfx.startFrame} durationInFrames={SFX_DURATION_FRAMES}>
           <Audio src={sfx.src} />
         </Sequence>
       ))}
