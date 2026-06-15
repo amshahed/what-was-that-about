@@ -86,7 +86,7 @@ Status: ⏳ pending
 
 <!-- Change to "Status: ✅ approved" ONLY after every claim below is verified.
      The render pipeline BLOCKS on this line — assemble and short will not run without it.
-     See docs/episode-workflow.md §3b for the fact-check protocol. -->
+     See docs/episode-workflow.md §3a for the fact-check protocol. -->
 
 ## Checks
 
@@ -134,10 +134,10 @@ beats:
         - component: bg:office-wall
         - component: actor:poseidon
           props: { x: 820, y: 360, pose: tie }
-    tags: ["SFX:record-scratch"]
+    tags: ["SFX:record scratch"]
 
   # Add more beats here. Keep each beat to one visual idea.
-  # Tags: [HOLD] | [ZOOM] | ["SFX:record-scratch"] | ["SFX:boing"] | ["SFX:ding"] | ["SFX:whoosh"]
+  # Tags: [HOLD] | [ZOOM] | ["SFX:record scratch"] | ["SFX:boing"] | ["SFX:ding"] | ["SFX:whoosh"]
   # See shared/assets.md for the full SFX catalogue.
 `;
 }

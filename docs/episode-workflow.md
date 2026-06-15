@@ -47,7 +47,7 @@ with narration text and optional tags.
 ```yaml
 tags: [HOLD]                   # linger on this shot (no visual cut)
 tags: [ZOOM]                   # Ken Burns punch-in (1.0→1.05 scale over beat duration)
-tags: ["SFX:record-scratch"]   # drop a comedic sting at this beat's start
+tags: ["SFX:record scratch"]   # drop a comedic sting at this beat's start
 tags: [HOLD, ZOOM]             # combine freely
 ```
 
@@ -69,7 +69,7 @@ Available SFX names (see `shared/assets.md` for files):
 ### Keeping it funny
 
 - Lead with the straight reading, then subvert it in the same beat.
-- Use `[ZOOM]` on the setup and `[SFX:record-scratch]` on the subversion.
+- Use `[ZOOM]` on the setup and `[SFX:record scratch]` on the subversion.
 - If a beat has no gag, it had better be doing essential setup work.
 
 ---
