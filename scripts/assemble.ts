@@ -137,6 +137,7 @@ async function main() {
 }
 
 main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.message : err);
+  // Clear message for expected errors (bad script, unknown character); DEBUG=1 shows the stack.
+  console.error(err instanceof Error ? (process.env.DEBUG ? err.stack : err.message) : err);
   process.exit(1);
 });

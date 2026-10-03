@@ -162,11 +162,12 @@ npm run generate-scenes <slug> -- --reroll 7,12   # 3 new candidates per beat, s
 npm run generate-scenes <slug> -- --pick 7=2,12=1 # keep a candidate: pins its seed in script.yml
 ```
 
-Other options (after `--`): `--only 2,5-7`, `--force`, `--dry-run` (prompts only, no ComfyUI),
+Other options (after `--`): `--beats 2,5-7`, `--force`, `--dry-run` (prompts only, no ComfyUI),
 `--prune` (delete unused PNGs: old takes and unpicked candidates — pick first), `--keep-loaded`
 (leave the models in VRAM for a faster next run; then stop ComfyUI before `align`). Always put
 `--` before the options; without it npm keeps them, and the command stops with a hint. Editing a beat's `image` text
-also gives a new image on the next run.
+also gives a new image on the next run. Adding or removing a beat's `caption` also
+remakes its still (same seed), because captioned beats keep the top of the frame clear.
 
 ---
 
@@ -214,7 +215,7 @@ Requires:
 - `out/alignment.json`
 - `audio/narration.wav`
 - `scenes/*.png` for the AI-still beats (missing ones stop the render with the exact
-  `generate-scenes … --only …` command; stale ones only warn)
+  `generate-scenes … --beats …` command; stale ones only warn)
 - (optional) music and SFX files in `shared/` — see `shared/assets.md`. Missing files only warn.
 
 Writes `out/roughcut.mp4` (16:9, Ken Burns, line-pop captions, music, SFX).

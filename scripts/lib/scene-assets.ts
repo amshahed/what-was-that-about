@@ -124,7 +124,7 @@ export function stageStills(
     );
     console.error(`missing AI stills for ${missing.length} beat(s):\n${lines.join("\n")}`);
     console.error(
-      `Run: npm run generate-scenes ${slug} -- --only ${missing.map((s) => s.beat).join(",")}`,
+      `Run: npm run generate-scenes ${slug} -- --beats ${missing.map((s) => s.beat).join(",")}`,
     );
     process.exit(2);
   }

@@ -37,8 +37,8 @@ Design decisions: [`docs/adr/`](./docs/adr).
    powershell -ExecutionPolicy Bypass -File tools\whisper\setup.ps1
    ```
 4. Optional: put the music and SFX files in `shared\`. See [`shared/assets.md`](./shared/assets.md).
-5. Start ComfyUI before `npm run generate-scenes` (or `tools/comfyui/prompts/poseidon_refs.py`):
-   `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
+5. `npm run generate-scenes` starts ComfyUI by itself when needed. To start it by hand (for example
+   for `tools/comfyui/prompts/poseidon_refs.py`): `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
 6. Start an episode: `npm run new-episode <slug>`. See [`docs/episode-workflow.md`](./docs/episode-workflow.md).
 
 `npm run align` uses local Whisper by default. To use the OpenAI API instead (for example on the Mac), in PowerShell:

@@ -71,7 +71,7 @@ Cast block: 1 character → its `description`; 2–3 → "On the left: A, short.
 
 ## 5 — CLI `npm run generate-scenes <slug>` (`scripts/generate-scenes.ts`)
 
-Flags: `--only 2,5-7`, `--force`, `--dry-run` (plan + prompts, no ComfyUI; works on the Mac / CI),
+Flags: `--beats 2,5-7` (renamed from `--only` in review round 2), `--force`, `--dry-run` (plan + prompts, no ComfyUI; works on the Mac / CI),
 `--prune` (delete orphan PNGs), `--reroll 7,12` (3 candidates per beat, seeds +1…+3, saved as
 `scenes/` like any still), `--pick 7=2` (writes candidate 2's seed into `script.yml` via the `yaml`
 Document API, keeps comments).
@@ -87,7 +87,7 @@ and candidate strips after `--reroll`.
 - New `BeatVisual`: kit → `SceneCanvas`; image → `<Img>` (waits for load) with `objectFit: cover` and
   1.04× overscan (trims corner marks), then the kit caption on top. `ZoomedScene` wraps any child.
 - `scripts/lib/scene-assets.ts`: `stageStills()` before `bundle()` — missing stills exit 2 with the list
-  and the exact `generate-scenes --only …` command; stale stills warn. `short` checks only its range.
+  and the exact `generate-scenes --beats …` command; stale stills warn. `short` checks only its range.
 - `render-script.ts` skips image beats with a log line.
 
 ## 7 — Docs
@@ -167,3 +167,12 @@ LoRA (V3), IP-Adapter / ControlNet (V4), upscaling, loudness normalization, port
 - `npm run generate-scenes sample --dry-run` (no `--`) stops with the hint; an out-of-range beat errors.
 - `align` → `assemble` (22.3 s): captions at the top no longer cover the characters.
 - A missing still: `assemble` exits 2 with `Run: npm run generate-scenes sample -- --only 4`.
+
+## Review round 2 (final reviewer) — fixes
+
+- `--only` → `--beats`: npm drops `--only` without a trace when `--` is missing, so the guard could
+  not see it and every stale beat would run. `--only` still works after `--`.
+- `--pick` with `--dry-run` only prints; it no longer writes script.yml or the manifest.
+- Auto-start quotes `COMFYUI_DIR` (paths with spaces). Ctrl+C interrupts only this run's job.
+- `COMFY_URL` trailing slash is stripped; error bodies are released; `DEBUG=1` shows stacks in
+  assemble/short; docs: captions change the prompt, README no longer says to start ComfyUI first.

@@ -91,9 +91,13 @@ export class ComfyClient {
   readonly clientId = "wwta-generate-scenes";
 
   constructor(
-    readonly baseUrl: string,
+    baseUrl: string,
     private readonly deps: ComfyDeps = defaultDeps,
-  ) {}
+  ) {
+    this.baseUrl = baseUrl.replace(/\/+$/, "");
+  }
+
+  readonly baseUrl: string;
 
   /**
    * One HTTP call. The timeout covers the response body too (a stalled download must not hang),
@@ -138,7 +142,10 @@ export class ComfyClient {
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         return await this.call(path, undefined, timeoutMs, async (res) => {
-          if (!res.ok) throw new HttpError(path, res.status);
+          if (!res.ok) {
+            await res.body?.cancel().catch(() => undefined); // free the connection
+            throw new HttpError(path, res.status);
+          }
           return (await res.json()) as T;
         });
       } catch (err) {
@@ -223,7 +230,11 @@ export class ComfyClient {
   }
 
   /** Queue the workflow and wait for its first image. Returns the PNG bytes. */
-  async generate(workflow: ApiWorkflow, deadlineMs: number): Promise<Uint8Array> {
+  async generate(
+    workflow: ApiWorkflow,
+    deadlineMs: number,
+    onQueued?: (promptId: string) => void,
+  ): Promise<Uint8Array> {
     const res = await this.postJson("/prompt", { prompt: workflow, client_id: this.clientId });
     const body = res.json as { prompt_id?: string; error?: unknown; node_errors?: unknown };
     if (!res.ok || !body.prompt_id) {
@@ -235,6 +246,7 @@ export class ComfyClient {
       );
     }
     const id = body.prompt_id;
+    onQueued?.(id);
     const start = this.deps.now();
     for (;;) {
       const item = await this.historyItem(id);

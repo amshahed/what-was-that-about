@@ -5,7 +5,8 @@
 // Writes: episodes/<slug>/scenes/<name>-<key>.png, scenes/manifest.json, out/scenes.html
 //
 // Options:
-//   --only 2,5-7    only these beats (0-based, as in `npm run short`)
+//   --beats 2,5-7   only these beats (0-based, as in `npm run short`). Not --only: npm swallows that
+//                   one silently even after a missing `--`.
 //   --force         regenerate even if the still is up to date
 //   --dry-run       print the plan and prompts; do not contact ComfyUI
 //   --reroll 7,12   make 3 new candidates for each beat (seed +1…+3); see out/scenes.html
@@ -64,12 +65,12 @@ interface Options {
 
 function usage(): never {
   console.error(
-    "usage: npm run generate-scenes <slug> [-- --only 2,5-7 | --force | --dry-run | --reroll 7,12 | --pick 7=2 | --prune]",
+    "usage: npm run generate-scenes <slug> [-- --beats 2,5-7 | --force | --dry-run | --reroll 7,12 | --pick 7=2 | --prune]",
   );
   process.exit(2);
 }
 
-const NPM_EATEN = ["only", "force", "dry_run", "reroll", "pick", "prune", "keep_loaded"];
+const NPM_EATEN = ["beats", "force", "dry_run", "reroll", "pick", "prune", "keep_loaded"];
 
 function parseArgs(argv: string[]): Options {
   // Without `--`, npm keeps flags such as --dry-run for itself (and drops them silently).
@@ -77,7 +78,8 @@ function parseArgs(argv: string[]): Options {
   if (eaten.length > 0) {
     throw new Error(
       `npm took --${eaten[0]!.replace("_", "-")} for itself. Put -- before the options: ` +
-        "npm run generate-scenes <slug> -- --dry-run",
+        "npm run generate-scenes <slug> -- --dry-run " +
+        `(or remove ${eaten[0]} from .npmrc / NPM_CONFIG_${eaten[0]!.toUpperCase()} if it is set there)`,
     );
   }
   const [slug, ...rest] = argv;
@@ -86,7 +88,7 @@ function parseArgs(argv: string[]): Options {
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
     const val = () => rest[++i] ?? usage();
-    if (a === "--only") o.only = parseBeatList(val());
+    if (a === "--beats" || a === "--only") o.only = parseBeatList(val());
     else if (a === "--force") o.force = true;
     else if (a === "--dry-run") o.dryRun = true;
     else if (a === "--reroll") o.reroll = parseBeatList(val());
@@ -102,7 +104,7 @@ function parseArgs(argv: string[]): Options {
     else if (a === "--keep-loaded") o.keepLoaded = true;
     else if (!a.startsWith("-")) {
       throw new Error(
-        `unexpected "${a}" — did you forget -- before the options? (npm run generate-scenes <slug> -- --only 3)`,
+        `unexpected "${a}" — did you forget -- before the options? (npm run generate-scenes <slug> -- --beats 3)`,
       );
     } else throw new Error(`unknown option "${a}"`);
   }
@@ -183,7 +185,7 @@ async function startComfyIfLocal(client: ComfyClient): Promise<void> {
   console.log(
     `ComfyUI is not running — starting ${path.join(COMFY_DIR, LAUNCHER)} in a new window ...`,
   );
-  spawn("cmd.exe", ["/c", "start", '"ComfyUI"', "/D", COMFY_DIR, LAUNCHER], {
+  spawn("cmd.exe", ["/c", "start", '"ComfyUI"', "/D", `"${COMFY_DIR}"`, LAUNCHER], {
     detached: true,
     stdio: "ignore",
     windowsVerbatimArguments: true,
@@ -208,7 +210,11 @@ async function main() {
   );
   let ep = loadEpisodeScenes(episodeDir, scriptPath);
 
-  if (opts.pick) {
+  if (opts.pick && opts.dryRun) {
+    console.log(
+      `dry run: would pick ${opts.pick.map(([b, n]) => `${b}=${n}`).join(", ")} (script.yml unchanged)`,
+    );
+  } else if (opts.pick) {
     pickCandidates(scriptPath, ep, opts.pick);
     ep = loadEpisodeScenes(episodeDir, scriptPath);
   }
@@ -301,9 +307,10 @@ async function main() {
     await startComfyIfLocal(client);
     const { version } = await client.preflight(templateModels(ep.workflow.template));
     console.log(`ComfyUI ${version} at ${client.baseUrl}`);
+    let current: string | undefined;
     process.once("SIGINT", () => {
       console.error("\ninterrupted — cancelling the running job");
-      void client.interrupt().finally(() => process.exit(130));
+      void client.interrupt(current).finally(() => process.exit(130));
     });
 
     const manifest: Manifest = readManifest(episodeDir, ep.script.id);
@@ -331,7 +338,11 @@ async function main() {
           guidance: ep.style.guidance,
           prefix: `wwta/${ep.script.id}/${j.file.replace(/\.png$/, "")}`,
         });
-        const png = await client.generate(workflow, k === 0 ? FIRST_DEADLINE_MS : DEADLINE_MS);
+        const png = await client.generate(
+          workflow,
+          k === 0 ? FIRST_DEADLINE_MS : DEADLINE_MS,
+          (id) => (current = id),
+        );
         const target = path.join(dir, j.file);
         writeFileSync(`${target}.tmp`, png);
         renameSync(`${target}.tmp`, target);

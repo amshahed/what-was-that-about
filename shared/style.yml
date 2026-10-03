@@ -1,7 +1,7 @@
 # Channel look for AI stills. Changing anything here makes existing stills "stale":
 # generate-scenes regenerates them; assemble still uses the old files and warns.
 #
-# Prompt order: prefix → cast descriptions → the beat's image text → suffix.
+# Prompt order: prefix → cast descriptions → the beat's image text → suffix (→ captionSpace).
 # The prefix comes first because CLIP-L reads only ~77 tokens.
 prefix: >-
   Cartoon webcomic panel in the style of Cyanide and Happiness and Crayon Capital: thick clean black

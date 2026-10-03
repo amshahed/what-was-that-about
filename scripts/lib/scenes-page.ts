@@ -75,7 +75,7 @@ figcaption { padding: 8px 10px; } figcaption small { color: var(--muted); }
 .hint { font-size: 12px; color: var(--muted); padding: 0 10px 8px; font-family: ui-monospace, monospace; }
 </style></head><body>
 <h1>${esc(p.script.id)} — ${p.script.beats.length} beats, ${p.plan.stills.length} AI stills</h1>
-<p class="sub">Beat numbers match <code>npm run short</code> and <code>--only</code> / <code>--reroll</code>. Hover an image for its prompt.</p>
+<p class="sub">Beat numbers match <code>npm run short</code> and <code>--beats</code> / <code>--reroll</code>. Hover an image for its prompt.</p>
 <div class="grid">
 ${cards.join("\n")}
 </div></body></html>
