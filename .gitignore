@@ -13,6 +13,7 @@ build/
 out/
 episodes/**/out/
 episodes/**/audio/
+episodes/**/scenes/
 *.mp4
 *.mov
 *.wav

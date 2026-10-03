@@ -10,6 +10,7 @@
 import path from "node:path";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { alignAudio, resolveEngine } from "../render/align";
+import { ComfyClient, DEFAULT_COMFY_URL } from "../render/comfy";
 import { resolveEpisodeDir } from "./lib/episode";
 import { lowCoverageWarning, narrationWords, spellingPrompt } from "./lib/spelling-prompt";
 
@@ -41,6 +42,11 @@ async function main() {
     console.warn("script.yml did not parse; aligning without a spelling hint.");
   }
 
+  if (engine === "local") {
+    // Local Whisper needs the GPU memory that ComfyUI may still hold after generate-scenes.
+    const freed = await new ComfyClient(process.env.COMFY_URL ?? DEFAULT_COMFY_URL).free();
+    if (freed) console.log("asked ComfyUI to unload its models (frees VRAM for Whisper)");
+  }
   console.log(`aligning (${engine}): ${path.relative(process.cwd(), audioPath)}`);
 
   const result = await alignAudio(audioPath, { engine, prompt });

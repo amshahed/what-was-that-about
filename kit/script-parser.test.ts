@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseScript, ScriptParseError } from "./script-parser";
+import type { BeatScene, KitScene } from "./script";
+
+const kit = (scene: BeatScene): KitScene => scene as KitScene;
 
 const VALID = `
 id: sample
@@ -31,7 +34,7 @@ describe("parseScript — happy path", () => {
 
     const b0 = s.beats[0]!;
     expect(b0.narration).toContain("Hello world.");
-    expect(b0.scene.layers).toHaveLength(2);
+    expect(kit(b0.scene).layers).toHaveLength(2);
     expect(b0.scene.caption).toBe("Just a 3pm sync.");
     expect(b0.hold).toBe(true);
     expect(b0.zoom).toBe(true);
@@ -46,7 +49,7 @@ describe("parseScript — happy path", () => {
 
   it("preserves layer order", () => {
     const s = parseScript(VALID);
-    expect(s.beats[0]!.scene.layers.map((l) => l.component)).toEqual([
+    expect(kit(s.beats[0]!.scene).layers.map((l) => l.component)).toEqual([
       "bg:office-wall",
       "actor:poseidon",
     ]);
@@ -54,7 +57,7 @@ describe("parseScript — happy path", () => {
 
   it("defaults empty props to {}", () => {
     const s = parseScript(VALID);
-    expect(s.beats[1]!.scene.layers[0]!.props).toEqual({});
+    expect(kit(s.beats[1]!.scene).layers[0]!.props).toEqual({});
   });
 });
 
@@ -78,7 +81,11 @@ describe("parseScript — errors", () => {
   });
 
   it("requires id", () => {
-    expectThrow("tone: balanced\nbeats: [{narration: x, scene: {layers: [{component: bg:office-wall}]}}]", "$.id", "missing");
+    expectThrow(
+      "tone: balanced\nbeats: [{narration: x, scene: {layers: [{component: bg:office-wall}]}}]",
+      "$.id",
+      "missing",
+    );
   });
 
   it("rejects unknown tone", () => {
@@ -163,9 +170,79 @@ describe("parseScript — sample episode", () => {
     const samplePath = fileURLToPath(new URL("../episodes/sample/script.yml", import.meta.url));
     const script = parseScript(readFileSync(samplePath, "utf8"));
     expect(script.id).toBe("sample-episode");
-    expect(script.beats).toHaveLength(3);
+    expect(script.beats).toHaveLength(5);
     expect(script.beats[0]!.hold).toBe(true);
     expect(script.beats[1]!.zoom).toBe(true);
     expect(script.beats[2]!.sfx).toEqual(["record-scratch"]);
+    expect(script.beats[3]!.scene).toMatchObject({ kind: "image", cast: ["poseidon"] });
+    expect(script.beats[4]!.scene).toMatchObject({ kind: "image", cast: [] });
+  });
+});
+
+describe("parseScript — AI-still beats", () => {
+  const wrap = (scene: string) =>
+    `id: x\ntone: light\nbeats:\n  - narration: hi\n    scene: ${scene}\n`;
+  const chars = { characters: new Set(["poseidon", "joe-chip"]) };
+  const expectThrow = (yaml: string, pathFragment: string, msgFragment: string) => {
+    let err: unknown;
+    try {
+      parseScript(yaml);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(ScriptParseError);
+    expect((err as ScriptParseError).path).toContain(pathFragment);
+    expect((err as ScriptParseError).message).toContain(msgFragment);
+  };
+
+  it("parses image, cast, seed and caption", () => {
+    const s = parseScript(
+      wrap(`{ image: "Poseidon reads", cast: [poseidon], seed: 7, caption: "Hm." }`),
+      chars,
+    );
+    expect(s.beats[0]!.scene).toEqual({
+      kind: "image",
+      image: "Poseidon reads",
+      cast: ["poseidon"],
+      seed: 7,
+      caption: "Hm.",
+    });
+  });
+
+  it("defaults cast to [] and leaves seed out", () => {
+    expect(parseScript(wrap(`{ image: "an empty shelf" }`)).beats[0]!.scene).toEqual({
+      kind: "image",
+      image: "an empty shelf",
+      cast: [],
+    });
+  });
+
+  it.each([
+    [`{ image: "x", layers: [{ component: bg:office-wall }] }`, "$.beats[0].scene", "pick one"],
+    [`{ caption: "x" }`, "$.beats[0].scene", 'needs "layers"'],
+    [`{ image: "  " }`, "$.beats[0].scene.image", "non-empty"],
+    [`{ image: "x", capton: "typo" }`, "$.beats[0].scene.capton", "unknown scene field"],
+    [
+      `{ layers: [{ component: bg:office-wall }], seed: 3 }`,
+      "$.beats[0].scene.seed",
+      "unknown scene field",
+    ],
+    [`{ image: "x", cast: [Poseidon] }`, "$.beats[0].scene.cast[0]", "kebab-case"],
+    [`{ image: "x", cast: [poseidon, poseidon] }`, "$.beats[0].scene.cast[1]", "listed twice"],
+    [`{ image: "x", cast: [a, b, c, d] }`, "$.beats[0].scene.cast", "at most 3"],
+    [`{ image: "x", seed: -1 }`, "$.beats[0].scene.seed", "integer from 0"],
+    [`{ image: "x", seed: 1.5 }`, "$.beats[0].scene.seed", "integer from 0"],
+  ])("rejects %s", (scene, path, msg) => {
+    expectThrow(wrap(scene), path, msg);
+  });
+
+  it("checks cast ids against known characters when given", () => {
+    expect(() => parseScript(wrap(`{ image: "x", cast: [posiedon] }`), chars)).toThrow(
+      /unknown character "posiedon" \(known: joe-chip, poseidon\) — add shared\/characters\/posiedon.yml/,
+    );
+    // Without the option, any well-formed id is accepted.
+    expect(parseScript(wrap(`{ image: "x", cast: [posiedon] }`)).beats[0]!.scene).toMatchObject({
+      cast: ["posiedon"],
+    });
   });
 });

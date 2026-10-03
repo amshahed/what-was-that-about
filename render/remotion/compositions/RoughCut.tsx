@@ -1,7 +1,6 @@
 import { type FC, useCallback } from "react";
 import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
-import { SceneCanvas } from "../SceneCanvas";
-import { ZoomedScene } from "./ZoomedScene";
+import { BeatShot } from "../BeatVisual";
 import { CaptionTrack } from "./CaptionTrack";
 import { buildCaptionLines } from "../../captions";
 import { musicVolumeAtFrame, SFX_DURATION_FRAMES, type SfxEvent } from "../../mix";
@@ -22,27 +21,19 @@ export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc, musicSrc, sfxEven
   return (
     <AbsoluteFill>
       {audioSrc && <Audio src={staticFile(audioSrc)} />}
-      {musicSrc && (
-        <Audio
-          src={staticFile(musicSrc)}
-          volume={musicVolume}
-          loop
-        />
-      )}
+      {musicSrc && <Audio src={staticFile(musicSrc)} volume={musicVolume} loop />}
       {sfxEvents.map((sfx, i) => (
-        <Sequence key={`${sfx.startFrame}-${i}`} from={sfx.startFrame} durationInFrames={SFX_DURATION_FRAMES}>
+        <Sequence
+          key={`${sfx.startFrame}-${i}`}
+          from={sfx.startFrame}
+          durationInFrames={SFX_DURATION_FRAMES}
+        >
           <Audio src={staticFile(sfx.src)} />
         </Sequence>
       ))}
       {beats.map((beat, i) => (
         <Sequence key={i} from={beat.startFrame} durationInFrames={beat.durationFrames}>
-          {beat.zoom ? (
-            <ZoomedScene spec={beat.scene} durationFrames={beat.durationFrames} />
-          ) : (
-            <AbsoluteFill>
-              <SceneCanvas spec={beat.scene} />
-            </AbsoluteFill>
-          )}
+          <BeatShot beat={beat} />
         </Sequence>
       ))}
       <CaptionTrack lines={captionLines} />

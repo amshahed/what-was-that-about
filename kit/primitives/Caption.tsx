@@ -1,19 +1,26 @@
-// Bottom caption bar. (Slice 8 will animate these from the script; here it's static.)
+// A beat's own caption (scene.caption): a bar at the TOP of the frame. The bottom belongs to the
+// line-pop narration subtitles (CaptionTrack, PRD §9.1), which would otherwise cover it.
 
 import { RRect } from "../rough/rough";
 import { PALETTE, CAPTION_FONT } from "../rough/style";
 
 export const Caption = ({ text }: { text: string }) => {
-  const y = 952;
+  // Occupies y 24–104. Kit scenes that use a caption keep that band free of important art.
+  const y = 24;
   return (
     <g>
-      {RRect(120, y, 1680, 96, { fill: "#fffef6", fillStyle: "solid", stroke: PALETTE.ink, strokeWidth: 3 })}
+      {RRect(160, y, 1600, 80, {
+        fill: "#fffef6",
+        fillStyle: "solid",
+        stroke: PALETTE.ink,
+        strokeWidth: 3,
+      })}
       <text
         x={960}
-        y={y + 62}
+        y={y + 54}
         textAnchor="middle"
         fontFamily={CAPTION_FONT}
-        fontSize={46}
+        fontSize={42}
         fill={PALETTE.ink}
       >
         {text}

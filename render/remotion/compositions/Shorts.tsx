@@ -1,8 +1,7 @@
 import { type FC, useCallback } from "react";
 import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
-import { PALETTE, STAGE } from "../../../kit/rough/style";
-import { SceneCanvas } from "../SceneCanvas";
-import { ZoomedScene } from "./ZoomedScene";
+import { CAPTION_FONT, PALETTE, STAGE } from "../../../kit/rough/style";
+import { BeatShot } from "../BeatVisual";
 import { CaptionTrack } from "./CaptionTrack";
 import { buildCaptionLines } from "../../captions";
 import { musicVolumeAtFrame, SFX_DURATION_FRAMES, type SfxEvent } from "../../mix";
@@ -32,7 +31,35 @@ export const SHORTS_DEFAULT_PROPS: ShortsProps = {
   totalFrames: 30,
 };
 
-export const Shorts: FC<ShortsProps> = ({ beats, audioSrc, audioStartFrame, musicSrc, sfxEvents }) => {
+const SceneCaption: FC<{ text: string }> = ({ text }) => (
+  <AbsoluteFill style={{ alignItems: "center", paddingTop: 120, pointerEvents: "none" }}>
+    <div
+      style={{
+        backgroundColor: "#fffef6",
+        border: `3px solid ${PALETTE.ink}`,
+        borderRadius: 10,
+        padding: "16px 28px",
+        maxWidth: "88%",
+        textAlign: "center",
+        fontFamily: CAPTION_FONT,
+        fontSize: 56,
+        lineHeight: 1.25,
+        color: PALETTE.ink,
+        overflowWrap: "break-word",
+      }}
+    >
+      {text}
+    </div>
+  </AbsoluteFill>
+);
+
+export const Shorts: FC<ShortsProps> = ({
+  beats,
+  audioSrc,
+  audioStartFrame,
+  musicSrc,
+  sfxEvents,
+}) => {
   const captionLines = buildCaptionLines(beats);
   const musicVolume = useCallback((f: number) => musicVolumeAtFrame(f, beats), [beats]);
   return (
@@ -51,26 +78,30 @@ export const Shorts: FC<ShortsProps> = ({ beats, audioSrc, audioStartFrame, musi
       >
         {beats.map((beat, i) => (
           <Sequence key={i} from={beat.startFrame} durationInFrames={beat.durationFrames}>
-            {beat.zoom ? (
-              <ZoomedScene spec={beat.scene} durationFrames={beat.durationFrames} />
-            ) : (
-              <AbsoluteFill>
-                <SceneCanvas spec={beat.scene} />
-              </AbsoluteFill>
-            )}
+            <BeatShot beat={beat} withCaption={false} />
           </Sequence>
         ))}
       </div>
       {/* Audio — startFrom seeks into narration at the selected beat offset */}
       {audioSrc && <Audio src={staticFile(audioSrc)} startFrom={audioStartFrame} />}
-      {musicSrc && (
-        <Audio src={staticFile(musicSrc)} volume={musicVolume} loop />
-      )}
+      {musicSrc && <Audio src={staticFile(musicSrc)} volume={musicVolume} loop />}
       {sfxEvents.map((sfx, i) => (
-        <Sequence key={`${sfx.startFrame}-${i}`} from={sfx.startFrame} durationInFrames={SFX_DURATION_FRAMES}>
+        <Sequence
+          key={`${sfx.startFrame}-${i}`}
+          from={sfx.startFrame}
+          durationInFrames={SFX_DURATION_FRAMES}
+        >
           <Audio src={staticFile(sfx.src)} />
         </Sequence>
       ))}
+      {/* Beat captions (scene.caption) at the top, at 9:16 width — inside the 16:9 layer they would be cropped */}
+      {beats.map((beat, i) =>
+        beat.scene.caption ? (
+          <Sequence key={`cap-${i}`} from={beat.startFrame} durationInFrames={beat.durationFrames}>
+            <SceneCaption text={beat.scene.caption} />
+          </Sequence>
+        ) : null,
+      )}
       {/* Captions: rendered at native 9:16 resolution, not inside the scaled div */}
       <CaptionTrack lines={captionLines} />
     </AbsoluteFill>
