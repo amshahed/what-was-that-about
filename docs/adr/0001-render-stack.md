@@ -16,7 +16,7 @@ The pipeline turns code-defined, hand-drawn-style (Rough.js) scenes into video: 
 2. **SVG→PNG + FFmpeg** — render scenes to PNG (resvg/sharp), then stitch/animate/caption/mix by hand with FFmpeg.
 
 ## Decision
-**Remotion.** One framework expresses components, motion, captions, audio, and both aspect ratios. It collapses slices #7 (assembly), #8 (captions), #9 (music/SFX), and #11 (Shorts) into a single programmatic surface and reuses the exact components we draw for stills — the strongest lever on the low-effort goal. Rough.js output (SVG paths) embeds directly in Remotion components. Licensing is free at our (solo) scale.
+**Remotion.** One framework expresses components, motion, captions, audio, and both aspect ratios. It collapses slices #8 (assembly), #9 (captions), #10 (music/SFX), and #11 (Shorts) into a single programmatic surface and reuses the exact components we draw for stills — the strongest lever on the low-effort goal. Rough.js output (SVG paths) embeds directly in Remotion components. Licensing is free at our (solo) scale.
 
 ## Consequences
 - **+** Maximum component reuse across stills, long-form, and Shorts; great preview DX (`npm run studio`).

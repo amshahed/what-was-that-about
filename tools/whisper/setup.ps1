@@ -16,6 +16,9 @@ function Invoke-Native {
   if ($LASTEXITCODE -ne 0) { throw "$exe $($rest -join ' ') failed (exit $LASTEXITCODE)" }
 }
 
+if ((Test-Path $envDir) -and -not (Test-Path "$envDir\Scripts\python.exe")) {
+  throw "$envDir exists but has no Scripts\python.exe (broken env). Remove it and run again."
+}
 if (-not (Test-Path $envDir)) { Invoke-Native py -3.12 -m venv $envDir }
 Invoke-Native "$envDir\Scripts\python.exe" -m pip install --upgrade pip
 Invoke-Native "$envDir\Scripts\python.exe" -m pip install --only-binary=:all: -r "$PSScriptRoot\requirements.lock.txt"

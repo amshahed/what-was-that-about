@@ -5,6 +5,8 @@ import {
   MUSIC_VOLUME_FULL,
   MUSIC_VOLUME_DUCK,
   sfxFile,
+  sfxKey,
+  SFX_FILES,
   TONE_MUSIC,
 } from "./mix";
 import type { BeatEntry } from "./timeline";
@@ -110,6 +112,10 @@ describe("sfxFile", () => {
   it("resolves known names in any spelling", () => {
     expect(sfxFile("Record-Scratch")).toBe("record-scratch.wav");
     expect(sfxFile("drum_hit")).toBe("drum-hit.wav");
+  });
+
+  it("has only normalized keys, so every entry is reachable", () => {
+    for (const key of Object.keys(SFX_FILES)) expect(sfxKey(key)).toBe(key);
   });
 
   it("returns undefined for unknown, empty and prototype names", () => {

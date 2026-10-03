@@ -47,6 +47,7 @@ print("queued", len(ids), flush=True)
 # A job that never reaches history (ComfyUI restarted, queue cleared) must not hang the script.
 PER_IMAGE_LIMIT_S = 300
 t0 = time.time()
+failed = 0
 for n, (name, pid) in enumerate(ids, start=1):
     deadline = t0 + n * PER_IMAGE_LIMIT_S
     while True:
@@ -54,7 +55,10 @@ for n, (name, pid) in enumerate(ids, start=1):
         status = h.get(pid, {}).get("status", {})
         if status.get("completed") is not None:
             print(name, status.get("status_str"), f"{time.time()-t0:.0f}s", flush=True)
+            failed += status.get("status_str") != "success"
             break
         if time.time() > deadline:
             raise SystemExit(f"{name}: no result after {time.time()-t0:.0f}s — is ComfyUI still running?")
         time.sleep(3)
+if failed:
+    raise SystemExit(f"{failed} of {len(ids)} images failed")

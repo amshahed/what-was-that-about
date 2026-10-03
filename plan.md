@@ -59,6 +59,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
 | — | Shorts Pipeline B: standalone `shorts/<id>/` (PRD §7.7) | AFK | — | ⬜ later |
 | — | `HOLD` tag: extend dwell in assembly (parsed, not used yet) | AFK | — | ⬜ later |
+| — | Loudness: normalize the final mix to -14 LUFS (PRD §8.3) | AFK | — | ⬜ before pilot publish |
 
 Before V2/V3: `.gitignore` ignores every `*.png`. Decide whether character reference images in `shared/characters/` get committed (add an exception) or stay local.
 
@@ -84,7 +85,7 @@ Before V2/V3: `.gitignore` ignores every `*.png`. Decide whether character refer
 - **Render/assembly:** **Remotion — locked** (PRD §8.4). FFmpeg-only fallback rejected.
 - **Audio sync:** **local faster-whisper** (`large-v3-turbo`, CUDA) — locked 2026-10-03 (PRD §8.3). Single-file boundary; OpenAI Whisper API kept as fallback.
 - **Local tools:** recipes in `tools/` (PRD §8.6). ComfyUI at `C:\ComfyUI`; Whisper venv at `.whisper-env/`.
-- **Audio contract:** WAV mono 44.1 kHz 16-bit, peak `-6..-3` dBFS; pipeline normalizes to **-14 LUFS**.
+- **Audio contract:** WAV mono 44.1 kHz 16-bit, peak `-6..-3` dBFS; pipeline is to normalize to **-14 LUFS** (not built yet — see roadmap).
 - **Output:** 16:9 long-form + 9:16 Shorts from the same components. Two Shorts pipelines: **A** auto-suggested per episode, **B** standalone at repo root `shorts/<id>/` (PRD §7.7).
 - **Episode id convention:** **slug-only** (`ubik`, not `01-ubik`).
 
@@ -96,7 +97,7 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 3. **Captions — two-tier**: line-pop subtitles (always-on) + text-hero emphasis scenes (§9.1). Per-word pop rejected.
 4. **§6.0 Visual storytelling principle**: images carry the message — unbounded visual vocabulary, not locked to character scenes.
 5. **Casting doctrine** (§6.0): cast existing first, custom last.
-6. **Audio contract** (§8.3): WAV mono 44.1 kHz 16-bit, `-6..-3` dBFS peak, normalize to -14 LUFS.
+6. **Audio contract** (§8.3): WAV mono 44.1 kHz 16-bit, `-6..-3` dBFS peak, normalize to -14 LUFS (normalization not built yet).
 7. **Shorts — two pipelines** (§7.7): A auto-suggested per episode under `episodes/<slug>/shorts/` (today `npm run short` writes to `out/`); B standalone at repo root `shorts/<id>/`.
 8. **Channel name** — *deferred* (§18); "What Was That About" working title fine for now.
 9. **Episode structure — 5-section tag-based template** (§6.4): cold-open, spoiler-warn-and-setup, recap, analysis, verdict.

@@ -154,7 +154,8 @@ Review the stills. For a bad image, change the prompt or the seed, then run the 
 Record the approved script to `audio/narration.wav`, in one take (inline retakes are fine):
 
 - Format: WAV mono, 44.1 kHz, 16-bit.
-- Levels: peak −6 to −3 dBFS (headroom for the music bed). The mix is normalized to −14 LUFS.
+- Levels: peak −6 to −3 dBFS (headroom for the music bed). Normalizing the mix to −14 LUFS is
+  planned, not built: assembly does not change loudness yet.
 - Delivery: conversational, not broadcast. Dry signal — no reverb, no noise gate.
 
 ---

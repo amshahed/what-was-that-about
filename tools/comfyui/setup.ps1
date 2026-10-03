@@ -6,6 +6,7 @@
 param([string]$InstallDir = "C:\ComfyUI")
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+$InstallDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($InstallDir)
 
 $ComfyVersion = "0.37.0"
 $Nodes = @(
@@ -35,7 +36,13 @@ if (-not (Test-Path "$InstallDir\python_embeded")) {
   Write-Host "Downloading ComfyUI portable v$ComfyVersion ..."
   Invoke-Native curl.exe -fL --retry 5 -C - -o $archive "https://github.com/comfyanonymous/ComfyUI/releases/download/v$ComfyVersion/ComfyUI_windows_portable_nvidia.7z"
   Invoke-Native curl.exe -fL --retry 5 -o "$tmp\7zr.exe" "https://www.7-zip.org/a/7zr.exe"
-  Invoke-Native "$tmp\7zr.exe" x $archive "-o$tmp\extract" -y | Out-Null
+  try {
+    Invoke-Native "$tmp\7zr.exe" x $archive "-o$tmp\extract" -y | Out-Null
+  } catch {
+    # A corrupt archive would fail every re-run; remove it so the next run downloads it again.
+    Remove-Item $archive, "$tmp\extract" -Recurse -Force -ErrorAction SilentlyContinue
+    throw
+  }
   $root = Get-ChildItem "$tmp\extract" -Directory | Select-Object -First 1
   if ($null -eq $root -or -not (Test-Path "$($root.FullName)\python_embeded")) {
     throw "Unexpected archive layout in $tmp\extract"
@@ -46,7 +53,8 @@ if (-not (Test-Path "$InstallDir\python_embeded")) {
 $py = "$InstallDir\python_embeded\python.exe"
 
 $versionFile = "$InstallDir\ComfyUI\comfyui_version.py"
-$installed = if (Test-Path $versionFile) { (Select-String -Path $versionFile -Pattern '__version__ = "(.+)"').Matches.Groups[1].Value } else { "unknown" }
+$match = if (Test-Path $versionFile) { Select-String -Path $versionFile -Pattern '__version__ = "(.+)"' } else { $null }
+$installed = if ($match) { $match.Matches[0].Groups[1].Value } else { "unknown" }
 if ($installed -ne $ComfyVersion) {
   Write-Warning "Installed ComfyUI is $installed; this recipe pins $ComfyVersion."
 }
@@ -78,10 +86,11 @@ foreach ($m in $manifest.models) {
 }
 
 # 4. LAN launcher (lets the Mac call this box on port 8188). cd to the .bat's folder so it runs from anywhere.
-Set-Content -Encoding ascii "$InstallDir\run_nvidia_gpu_lan.bat" -Value @"
-cd /d "%~dp0"
-.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 0.0.0.0 --port 8188
-pause
-"@
+# Set-Content writes each array item with CRLF, as cmd expects.
+Set-Content -Encoding ascii "$InstallDir\run_nvidia_gpu_lan.bat" -Value @(
+  'cd /d "%~dp0"',
+  '.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 0.0.0.0 --port 8188',
+  'pause'
+)
 
 Write-Host "Done. Start ComfyUI with $InstallDir\run_nvidia_gpu_lan.bat"

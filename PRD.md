@@ -106,7 +106,7 @@ Stages flow **seed → research → script → visuals → audio → assembly �
 | 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file contains `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
 | 4 | **Visual generation** | C + U | *(Planned: slice V2. Today every beat renders from the code kit.)* `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat. Text-hero beats render from the code kit. User reviews the stills; Claude re-rolls the ones that miss (new seed or new prompt). See §8.1. |
 | 5 | **Audio recording** | U | User records himself reading the approved script. **Audio contract:** WAV, mono, 44.1 kHz, 16-bit, peak in `-6` to `-3` dBFS, quiet room (see §8.3). |
-| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop after slice V1; the OpenAI Whisper API today — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX, audio normalized to -14 LUFS). User does a **light polish** pass only on comedic-timing beats. |
+| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop after slice V1; the OpenAI Whisper API today — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX; -14 LUFS normalization planned, not built yet). User does a **light polish** pass only on comedic-timing beats. |
 | 7 | **Shorts** | C + U | **Two pipelines** — see §7.7. **(A) Auto-suggested:** post-long-form, Claude proposes 1–3 candidate cuts (intro hook, mid-video bit, etc.) from the cold-open and tagged beats; user picks. **(B) Custom:** standalone Shorts authored at repo root `shorts/<id>/` — can slice from anywhere across episodes, with their own music/voice; lighter-weight pipeline. |
 | 8 | **Publish** | U | Title, thumbnail, description/tags, upload, schedule. |
 
@@ -149,7 +149,7 @@ This lets assembly be comedic-timing-aware *automatically*, without manual editi
 
 **Engine environment:** a Python 3.12 venv at `<repo>/.whisper-env` (gitignored), built from `tools/whisper/requirements.lock.txt` by `tools/whisper/setup.ps1`. Do not run it while ComfyUI is generating: Flux uses almost all of the VRAM.
 
-**Audio contract (Stage 5 deliverable):** WAV, **mono**, **44.1 kHz**, **16-bit**, peak in `-6` to `-3` dBFS, quiet room. The assembly pipeline then normalizes the final mix to **-14 LUFS** (YouTube's loudness target). One file per episode (whole script in one take, retakes inlined — alignment + tagging handle the rest).
+**Audio contract (Stage 5 deliverable):** WAV, **mono**, **44.1 kHz**, **16-bit**, peak in `-6` to `-3` dBFS, quiet room. The assembly pipeline is to normalize the final mix to **-14 LUFS** (YouTube's loudness target) — *planned, not built yet*. One file per episode (whole script in one take, retakes inlined — alignment + tagging handle the rest).
 
 ### 8.4 Rendering / assembly — locked stack
 **Locked: Remotion** (React-based programmatic video). The AI stills drop in as images and the code-kit text scenes as components; it natively handles Ken Burns, burned-in animated captions, audio track, and SFX, and produces the final MP4 via headless Chrome + FFmpeg. Best fit for "videos defined in code." Both 16:9 (long-form) and 9:16 (Shorts) render from the same components → near-free vertical reframe.
@@ -168,7 +168,7 @@ what-was-that-about/
   episodes/
     <slug>/       # e.g. ubik/
       seed.md         # user brain-dump
-      script.yml      # narration + [SECTION:...] + EDL tags + per-beat image prompts (see §6.4, §8.2)
+      script.yml      # narration + section markers (YAML comments for now) + EDL tags + per-beat images (see §6.4, §8.2)
       notes/
         research.md   # Claude's synthesis + sources
         factcheck.md  # required gate file — must contain `Status: ✅ approved` before assembly runs
@@ -183,7 +183,7 @@ what-was-that-about/
       notes/factcheck.md  # `npm run short` enforces the same gate
       audio/
       out/
-  render/         # Remotion project + alignment boundary (local faster-whisper)
+  render/         # Remotion project + alignment boundary (OpenAI API today; local faster-whisper after V1)
   scripts/        # CLI entry points (new-episode, align, assemble, short; generate-scenes planned in V2)
   shared/         # character files, tone presets, caption styles, music/SFX, brand tokens
   tools/          # setup recipes for the local GPU tools (ComfyUI, Whisper) — see §8.6
@@ -257,7 +257,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - **Pipeline:** free to use. ComfyUI, faster-whisper and Remotion are open source (Remotion is free at our solo scale); the Flux.1 Dev weights use a non-commercial license (see §16); assets are royalty-free.
 - **Hardware:** the existing Windows desktop (RTX 3080 10 GB) — no new purchase.
 - **One-time:** a decent USB mic (~$50–100) for clean narration. *(Open item: confirm mic situation.)*
-- **Ongoing:** **~$0** — image generation and alignment run locally (electricity only). The OpenAI Whisper API (≈$0.06 per episode) is only a fallback. Optional later: paid music library, thumbnail tooling.
+- **Ongoing:** **~$0** once slices V1/V2 ship — image generation and alignment run locally (electricity only). Until V1, alignment uses the OpenAI Whisper API (≈$0.06 per episode); after V1 it is only a fallback. Optional later: paid music library, thumbnail tooling.
 
 ## 16. Legal / copyright / monetization
 - **Book content:** summary + analysis = transformative / fair use. We synthesize, never reproduce the text.
