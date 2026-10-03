@@ -1,6 +1,6 @@
 # ADR 0003 — Alignment engine: local faster-whisper
 
-- **Status:** Accepted (implementation: slice V1)
+- **Status:** Accepted — implemented in slice V1 (#27)
 - **Date:** 2026-10-03
 - **Deciders:** project owner + Claude
 - **Relates to:** PRD §8.3, §8.6; changes the engine chosen in slice #7
@@ -26,7 +26,9 @@ Use **faster-whisper** (`large-v3-turbo`, CUDA, float16) locally.
 - **+** No key, no cost, offline. Measured: 13 s of audio in 0.5 s; model load 2 s.
 - **−** Another local env to maintain (recipe in `tools/whisper/`).
 - **−** Cannot run while ComfyUI is generating (10 GB of VRAM).
-- **−** Whisper writes numbers as digits ("9 to 5"); beat matching must normalize numbers.
+- **−** Whisper writes numbers as digits ("9 to 5") or as words ("Nine"), depending on context.
+  Beat matching converts number words up to 99 to digits on both sides, so "nine", "9", "twenty-one"
+  and "21" match. Larger numbers and years in words vs digits do not; those beats use estimated timing.
 
 ## Revisit if
 

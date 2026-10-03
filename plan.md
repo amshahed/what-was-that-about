@@ -43,14 +43,14 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #4 | Component kit + composition API | AFK | #2 | 🟩 merged (PR #16) |
 | #5 | Script / Edit-Decision-List format + parser | AFK | #4 | 🟩 merged (PR #17) |
 | #6 | Script → stills batch render | AFK | #4, #5 | 🟩 merged (PR #18) |
-| #7 | Whisper forced alignment (OpenAI Whisper API; engine now changing to local — see V1) | AFK | #5 | 🟩 merged (PR #20) |
+| #7 | Whisper forced alignment (OpenAI Whisper API; replaced by local faster-whisper in V1) | AFK | #5 | 🟩 merged (PR #20) |
 | #8 | Assembly v1: synced rough-cut with motion | AFK | #6, #7 | 🟩 merged (PR #21) |
 | #9 | Burned-in animated captions | AFK | #8 | 🟩 merged (PR #22) |
 | #10 | Music bed + SFX (tone-tag-driven) | AFK | #8 | 🟩 merged (PR #23) |
 | #11 | Shorts auto-cut (9:16) | AFK | #4, #8, #9 | 🟩 merged (PR #24) |
 | #12 | Per-episode content workflow scaffolding | AFK | #5 | 🟩 merged (PR #25) |
 | V0 | Local GPU tools: ComfyUI + Flux GGUF, faster-whisper env, `tools/` recipes, Poseidon look | **HITL** | — | 🟩 merged (PR: V0 local tools + docs) |
-| V1 | Local Whisper in `align` (faster-whisper engine; OpenAI API as fallback) | AFK | V0 | ⬜ |
+| V1 (#27) | Local Whisper in `align` (faster-whisper engine; OpenAI API as fallback) | AFK | V0 | 🟩 merged (PR #28) |
 | V2 | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | ⬜ |
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 (writing can start now) | ⬜ |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ Poseidon look locked "for now" |
@@ -59,9 +59,8 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
 | — | Shorts Pipeline B: standalone `shorts/<id>/` (PRD §7.7) | AFK | — | ⬜ later |
 | — | `HOLD` tag: extend dwell in assembly (parsed, not used yet) | AFK | — | ⬜ later |
-| — | Loudness: normalize the final mix to -14 LUFS (PRD §8.3) | AFK | — | ⬜ before pilot publish |
+| — | Loudness: normalize the final mix to -14 LUFS (PRD §8.3) | AFK | first Ubik rough cut | ⬜ before pilot publish |
 
-Before V2/V3: `.gitignore` ignores every `*.png`. Decide whether character reference images in `shared/characters/` get committed (add an exception) or stay local.
 
 `V*` = visual/audio-upgrade slices (2026-09 / 10). They get GitHub issue numbers when opened.
 
@@ -112,6 +111,7 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 16. **Poseidon look — locked "for now"** (§8.1): stocky, barrel-chested, round belly; white beard and wild hair; pink nose; teal toga over one shoulder; all-gold trident. Refine during the pilot.
 17. **Whisper engine — local faster-whisper** (§8.3), OpenAI API as fallback. Supersedes decision 1.
 18. **Reproducibility — recipes in `tools/`** (§8.6): pinned versions, model checksums, setup scripts. Installs and models stay out of git; generated images are not committed.
+19. **Character reference images stay out of git** (2026-10-03). They live on the GPU desktop; the prompts and seeds in `tools/comfyui/prompts/` reproduce them. Character files in `shared/characters/` hold text only. A trained LoRA file also stays local, in `C:\ComfyUI\ComfyUI\models\loras\`.
 
 ## North-star constraints (don't violate)
 - **Effort is a continuation gate** (PRD §13): drive per-episode *user* effort toward zero; episode #2 must be far easier than #1.
@@ -125,13 +125,12 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 **Phase 0 (pipeline skeleton) complete.** **Phase 0.5 (local upgrade) in progress.**
 
 Next, in this order:
-1. **V1 — local Whisper in `align`.** Write `plans/<issue#>-local-whisper.md`, get approval, build.
-2. **V2 — AI scene generation.** Write `plans/<issue#>-ai-scene-generation.md`, get approval, build.
-3. **#13 — Ubik pilot**, in parallel with V1/V2 for the writing steps:
+1. **V2 — AI scene generation.** Write `plans/<issue#>-ai-scene-generation.md`, get approval, build.
+2. **#13 — Ubik pilot**, in parallel with V2 for the writing steps:
    1. `npm run new-episode ubik`.
    2. Fill in `episodes/ubik/seed.md` (angle + tone: Heavy, locked decision #10).
    3. Claude researches → `notes/research.md`; drafts `script.yml` with an image prompt per beat.
    4. Verify facts → set `Status: ✅ approved` in `notes/factcheck.md`.
    5. After V2: `npm run generate-scenes ubik` → review stills.
    6. Record narration → `audio/narration.wav`.
-   7. After V1: `npm run align ubik` → `npm run assemble ubik`.
+   7. `npm run align ubik` → `npm run assemble ubik`.

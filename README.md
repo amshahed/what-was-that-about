@@ -12,7 +12,7 @@ seed → research → script.yml → fact-check gate → scene images → narrat
 | ------------------- | -------------------------------------------------------------------------- | ------------------ |
 | Script (beats, EDL) | `episodes/<slug>/script.yml`                                               | any machine        |
 | Scene images        | Code kit today; ComfyUI + Flux.1 Dev GGUF (local) after slice V2 (planned) | Windows GPU (3080) |
-| Narration timing    | OpenAI Whisper API today; local faster-whisper after slice V1 (planned)    | Windows GPU        |
+| Narration timing    | faster-whisper (local); OpenAI Whisper API as fallback                     | Windows GPU        |
 | Video (16:9 + 9:16) | Remotion: Ken Burns, captions, music, SFX                                  | Windows desktop    |
 
 Per-episode steps: [`docs/episode-workflow.md`](./docs/episode-workflow.md).
@@ -32,7 +32,7 @@ Design decisions: [`docs/adr/`](./docs/adr).
    ```powershell
    powershell -ExecutionPolicy Bypass -File tools\comfyui\setup.ps1
    ```
-3. Install local Whisper to `.whisper-env\` (used by slice V1):
+3. Install local Whisper to `.whisper-env\` (used by `npm run align`):
    ```powershell
    powershell -ExecutionPolicy Bypass -File tools\whisper\setup.ps1
    ```
@@ -41,8 +41,9 @@ Design decisions: [`docs/adr/`](./docs/adr).
    `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
 6. Start an episode: `npm run new-episode <slug>`. See [`docs/episode-workflow.md`](./docs/episode-workflow.md).
 
-Until `npm run align` uses local Whisper (V1), it needs the OpenAI key. In PowerShell:
-`$env:OPENAI_API_KEY = "sk-..."` (there is no `.env` loader).
+`npm run align` uses local Whisper by default. To use the OpenAI API instead (for example on the Mac), in PowerShell:
+`$env:ALIGN_ENGINE = "openai"; $env:OPENAI_API_KEY = "sk-..."` (there is no `.env` loader).
+On the Mac (zsh): `ALIGN_ENGINE=openai OPENAI_API_KEY=sk-... npm run align <slug>`.
 See [`tools/README.md`](./tools/README.md) for the pins and the details of each tool.
 
 ## Spec & process
@@ -62,7 +63,7 @@ Spec-driven, one slice at a time:
 
 - **Phase 0 — pipeline skeleton:** done (slices #2–#12).
 - **Phase 0.5 — local upgrade:** in progress. Done: ComfyUI + Flux, Poseidon look, Whisper env,
-  `tools/` recipes. Next: local Whisper in `align` (V1), AI scene generation (V2).
-- **Phase 1 — Ubik pilot (#13):** writing can start now; rendering waits for V1 and V2.
+  `tools/` recipes, local Whisper in `align` (V1). Next: AI scene generation (V2).
+- **Phase 1 — Ubik pilot (#13):** writing can start now; rendering with AI stills waits for V2.
 
 Live status: [`plan.md`](./plan.md).

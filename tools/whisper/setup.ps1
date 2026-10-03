@@ -1,6 +1,6 @@
 # Creates the local Whisper env at <repo>/.whisper-env (gitignored) from the pinned lock file.
 # Needs Python 3.12 with the `py` launcher, and an NVIDIA GPU.
-# The env is for planned slice V1 (local alignment); `npm run align` still calls the OpenAI API until V1 ships.
+# `npm run align` runs tools/whisper/align.py in this env (ALIGN_ENGINE=local, the default).
 # The model (~1.6 GB) downloads to .whisper-env/models the first time it runs.
 # av is pinned to 14.x: faster-whisper 1.2.1 calls av.open(metadata_errors=...), which av >= 15 removed.
 $ErrorActionPreference = "Stop"

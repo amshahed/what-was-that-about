@@ -1,5 +1,5 @@
 import { type FC, useCallback } from "react";
-import { AbsoluteFill, Audio, Sequence } from "remotion";
+import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
 import { PALETTE, STAGE } from "../../../kit/rough/style";
 import { SceneCanvas } from "../SceneCanvas";
 import { ZoomedScene } from "./ZoomedScene";
@@ -15,6 +15,7 @@ const SCENE_SCALE = SHORTS_H / STAGE.h;
 
 export interface ShortsProps {
   beats: BeatEntry[];
+  /** staticFile() names (public folder of the bundle), not URLs. Empty = none. */
   audioSrc: string;
   audioStartFrame: number;
   musicSrc: string;
@@ -61,13 +62,13 @@ export const Shorts: FC<ShortsProps> = ({ beats, audioSrc, audioStartFrame, musi
         ))}
       </div>
       {/* Audio — startFrom seeks into narration at the selected beat offset */}
-      <Audio src={audioSrc} startFrom={audioStartFrame} />
+      {audioSrc && <Audio src={staticFile(audioSrc)} startFrom={audioStartFrame} />}
       {musicSrc && (
-        <Audio src={musicSrc} volume={musicVolume} loop />
+        <Audio src={staticFile(musicSrc)} volume={musicVolume} loop />
       )}
       {sfxEvents.map((sfx, i) => (
         <Sequence key={`${sfx.startFrame}-${i}`} from={sfx.startFrame} durationInFrames={SFX_DURATION_FRAMES}>
-          <Audio src={sfx.src} />
+          <Audio src={staticFile(sfx.src)} />
         </Sequence>
       ))}
       {/* Captions: rendered at native 9:16 resolution, not inside the scaled div */}

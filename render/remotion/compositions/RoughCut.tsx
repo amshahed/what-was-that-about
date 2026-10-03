@@ -1,5 +1,5 @@
 import { type FC, useCallback } from "react";
-import { AbsoluteFill, Audio, Sequence } from "remotion";
+import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
 import { SceneCanvas } from "../SceneCanvas";
 import { ZoomedScene } from "./ZoomedScene";
 import { CaptionTrack } from "./CaptionTrack";
@@ -9,6 +9,7 @@ import type { BeatEntry } from "../../timeline";
 
 export interface RoughCutProps {
   beats: BeatEntry[];
+  /** staticFile() names (public folder of the bundle), not URLs. Empty = none. */
   audioSrc: string;
   musicSrc: string;
   sfxEvents: SfxEvent[];
@@ -20,17 +21,17 @@ export const RoughCut: FC<RoughCutProps> = ({ beats, audioSrc, musicSrc, sfxEven
   const musicVolume = useCallback((f: number) => musicVolumeAtFrame(f, beats), [beats]);
   return (
     <AbsoluteFill>
-      <Audio src={audioSrc} />
+      {audioSrc && <Audio src={staticFile(audioSrc)} />}
       {musicSrc && (
         <Audio
-          src={musicSrc}
+          src={staticFile(musicSrc)}
           volume={musicVolume}
           loop
         />
       )}
       {sfxEvents.map((sfx, i) => (
         <Sequence key={`${sfx.startFrame}-${i}`} from={sfx.startFrame} durationInFrames={SFX_DURATION_FRAMES}>
-          <Audio src={sfx.src} />
+          <Audio src={staticFile(sfx.src)} />
         </Sequence>
       ))}
       {beats.map((beat, i) => (

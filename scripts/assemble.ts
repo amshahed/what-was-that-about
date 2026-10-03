@@ -7,13 +7,13 @@
 // Writes: episodes/<slug>/out/roughcut.mp4
 
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
 import { mapBeatsToTimeline } from "../render/timeline";
 import { TONE_MUSIC, sfxFile, buildSfxEvents } from "../render/mix";
+import { RenderAssets } from "./lib/render-assets";
 import { resolveEpisodeDir, requireFile, checkFactgate } from "./lib/episode";
 import type { AlignmentResult } from "../render/align";
 import type { RoughCutProps } from "../render/remotion/compositions/RoughCut";
@@ -57,54 +57,79 @@ async function main() {
 
   const musicFile = TONE_MUSIC[script.tone];
   const musicPath = path.resolve("shared", "music", musicFile);
-  const musicSrc = existsSync(musicPath) ? pathToFileURL(musicPath).href : "";
+  // Media for the render is staged into a public folder (out/ is gitignored).
+  const assets = new RenderAssets(path.join(episodeDir, "out", ".render-public-roughcut"));
+  const musicSrc = existsSync(musicPath) ? assets.add(musicPath, `music/${musicFile}`) : "";
   if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);
 
   const sfxDir = path.resolve("shared", "sfx");
   const sfxEvents = buildSfxEvents(beats, (name) => {
     const file = sfxFile(name);
-    if (!file) { console.warn(`unknown SFX "${name}" (skipping)`); return null; }
+    if (!file) {
+      console.warn(`unknown SFX "${name}" (skipping)`);
+      return null;
+    }
     const p = path.join(sfxDir, file);
-    if (!existsSync(p)) { console.warn(`SFX file not found: ${p} (skipping)`); return null; }
-    return pathToFileURL(p).href;
+    if (!existsSync(p)) {
+      console.warn(`SFX file not found: ${p} (skipping)`);
+      return null;
+    }
+    return assets.add(p, `sfx/${file}`);
   });
 
-  console.log("bundling Remotion...");
-  const serveUrl = await bundle({ entryPoint: path.resolve("render/remotion/index.ts") });
+  // Stage every file before bundle(): it copies the public folder at bundle time.
+  const audioSrc = assets.add(audioPath, "narration.wav");
 
-  const inputProps: RoughCutProps = {
-    beats,
-    audioSrc: pathToFileURL(path.resolve(audioPath)).href,
-    musicSrc,
-    sfxEvents,
-    totalFrames,
-  };
-  // Remotion's inputProps type requires Record<string, unknown>; cast once here.
-  const inputPropsRecord = inputProps as unknown as Record<string, unknown>;
+  // bundle() writes a full copy (including the narration WAV) to %TEMP%; remove it afterwards.
+  let serveUrl: string | undefined;
+  try {
+    console.log("bundling Remotion...");
+    serveUrl = await bundle({
+      entryPoint: path.resolve("render/remotion/index.ts"),
+      publicDir: assets.dir,
+    });
 
-  const composition = await selectComposition({
-    serveUrl,
-    id: "roughcut",
-    inputProps: inputPropsRecord,
-  });
+    const inputProps: RoughCutProps = {
+      beats,
+      audioSrc,
+      musicSrc,
+      sfxEvents,
+      totalFrames,
+    };
+    // Remotion's inputProps type requires Record<string, unknown>; cast once here.
+    const inputPropsRecord = inputProps as unknown as Record<string, unknown>;
 
-  const outDir = path.join(episodeDir, "out");
-  mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, "roughcut.mp4");
+    const composition = await selectComposition({
+      serveUrl,
+      id: "roughcut",
+      inputProps: inputPropsRecord,
+    });
 
-  console.log(`rendering ${totalFrames} frames @ ${FPS}fps → ${path.relative(process.cwd(), outPath)}`);
+    const outDir = path.join(episodeDir, "out");
+    mkdirSync(outDir, { recursive: true });
+    const outPath = path.join(outDir, "roughcut.mp4");
 
-  await renderMedia({
-    composition,
-    serveUrl,
-    codec: "h264",
-    outputLocation: outPath,
-    inputProps: inputPropsRecord,
-    overwrite: true,
-  });
+    console.log(
+      `rendering ${totalFrames} frames @ ${FPS}fps → ${path.relative(process.cwd(), outPath)}`,
+    );
 
-  const durationSec = totalFrames / FPS;
-  console.log(`done: ${durationSec.toFixed(1)}s roughcut → ${path.relative(process.cwd(), outPath)}`);
+    await renderMedia({
+      composition,
+      serveUrl,
+      codec: "h264",
+      outputLocation: outPath,
+      inputProps: inputPropsRecord,
+      overwrite: true,
+    });
+
+    const durationSec = totalFrames / FPS;
+    console.log(
+      `done: ${durationSec.toFixed(1)}s roughcut → ${path.relative(process.cwd(), outPath)}`,
+    );
+  } finally {
+    assets.dispose();
+    if (serveUrl) rmSync(serveUrl, { recursive: true, force: true });
+  }
 }
 
 main().catch((err: unknown) => {

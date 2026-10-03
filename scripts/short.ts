@@ -7,13 +7,13 @@
 // Writes: episodes/<slug>/out/short-<start>-<end>.mp4
 
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
 import { mapBeatsToTimeline } from "../render/timeline";
 import { TONE_MUSIC, sfxFile, buildSfxEvents } from "../render/mix";
+import { RenderAssets } from "./lib/render-assets";
 import { resolveEpisodeDir, requireFile, checkFactgate } from "./lib/episode";
 import type { AlignmentResult } from "../render/align";
 import type { ShortsProps } from "../render/remotion/compositions/Shorts";
@@ -40,9 +40,18 @@ async function main() {
   const episodeDir = resolveEpisodeDir(slugArg!);
   checkFactgate(episodeDir);
 
-  const scriptPath = requireFile(path.join(episodeDir, "script.yml"), "Write the episode script to episodes/<slug>/script.yml");
-  const alignmentPath = requireFile(path.join(episodeDir, "out", "alignment.json"), "Run: npm run align <slug>");
-  const audioPath = requireFile(path.join(episodeDir, "audio", "narration.wav"), "Place narration WAV at episodes/<slug>/audio/narration.wav");
+  const scriptPath = requireFile(
+    path.join(episodeDir, "script.yml"),
+    "Write the episode script to episodes/<slug>/script.yml",
+  );
+  const alignmentPath = requireFile(
+    path.join(episodeDir, "out", "alignment.json"),
+    "Run: npm run align <slug>",
+  );
+  const audioPath = requireFile(
+    path.join(episodeDir, "audio", "narration.wav"),
+    "Place narration WAV at episodes/<slug>/audio/narration.wav",
+  );
 
   const script = parseScript(readFileSync(scriptPath, "utf8"));
   const alignment = JSON.parse(readFileSync(alignmentPath, "utf8")) as AlignmentResult;
@@ -56,16 +65,26 @@ async function main() {
 
   const musicFile = TONE_MUSIC[script.tone];
   const musicPath = path.resolve("shared", "music", musicFile);
-  const musicSrc = existsSync(musicPath) ? pathToFileURL(musicPath).href : "";
+  // Media for the render is staged into a public folder (out/ is gitignored).
+  const assets = new RenderAssets(
+    path.join(episodeDir, "out", `.render-public-short-${startIdx}-${endIdx}`),
+  );
+  const musicSrc = existsSync(musicPath) ? assets.add(musicPath, `music/${musicFile}`) : "";
   if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);
 
   const sfxDir = path.resolve("shared", "sfx");
   const allSfxEvents = buildSfxEvents(allBeats, (name) => {
     const file = sfxFile(name);
-    if (!file) { console.warn(`unknown SFX "${name}" (skipping)`); return null; }
+    if (!file) {
+      console.warn(`unknown SFX "${name}" (skipping)`);
+      return null;
+    }
     const p = path.join(sfxDir, file);
-    if (!existsSync(p)) { console.warn(`SFX file not found: ${p} (skipping)`); return null; }
-    return pathToFileURL(p).href;
+    if (!existsSync(p)) {
+      console.warn(`SFX file not found: ${p} (skipping)`);
+      return null;
+    }
+    return assets.add(p, `sfx/${file}`);
   });
 
   // Re-time selected beats to start at frame 0.
@@ -83,37 +102,58 @@ async function main() {
   const durationSec = totalFrames / FPS;
   console.log(`short: beats ${startIdx}–${endIdx} (${durationSec.toFixed(1)}s @ ${FPS}fps)`);
 
-  console.log("bundling Remotion...");
-  const serveUrl = await bundle({ entryPoint: path.resolve("render/remotion/index.ts") });
+  // Stage every file before bundle(): it copies the public folder at bundle time.
+  const audioSrc = assets.add(audioPath, "narration.wav");
 
-  const inputProps: ShortsProps = {
-    beats: selectedBeats,
-    audioSrc: pathToFileURL(path.resolve(audioPath)).href,
-    audioStartFrame: offset,
-    musicSrc,
-    sfxEvents: selectedSfxEvents,
-    totalFrames,
-  };
-  const inputPropsRecord = inputProps as unknown as Record<string, unknown>;
+  // bundle() writes a full copy (including the narration WAV) to %TEMP%; remove it afterwards.
+  let serveUrl: string | undefined;
+  try {
+    console.log("bundling Remotion...");
+    serveUrl = await bundle({
+      entryPoint: path.resolve("render/remotion/index.ts"),
+      publicDir: assets.dir,
+    });
 
-  const composition = await selectComposition({ serveUrl, id: "shorts", inputProps: inputPropsRecord });
+    const inputProps: ShortsProps = {
+      beats: selectedBeats,
+      audioSrc,
+      audioStartFrame: offset,
+      musicSrc,
+      sfxEvents: selectedSfxEvents,
+      totalFrames,
+    };
+    const inputPropsRecord = inputProps as unknown as Record<string, unknown>;
 
-  const outDir = path.join(episodeDir, "out");
-  mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, `short-${startIdx}-${endIdx}.mp4`);
+    const composition = await selectComposition({
+      serveUrl,
+      id: "shorts",
+      inputProps: inputPropsRecord,
+    });
 
-  console.log(`rendering ${totalFrames} frames @ ${FPS}fps → ${path.relative(process.cwd(), outPath)}`);
+    const outDir = path.join(episodeDir, "out");
+    mkdirSync(outDir, { recursive: true });
+    const outPath = path.join(outDir, `short-${startIdx}-${endIdx}.mp4`);
 
-  await renderMedia({
-    composition,
-    serveUrl,
-    codec: "h264",
-    outputLocation: outPath,
-    inputProps: inputPropsRecord,
-    overwrite: true,
-  });
+    console.log(
+      `rendering ${totalFrames} frames @ ${FPS}fps → ${path.relative(process.cwd(), outPath)}`,
+    );
 
-  console.log(`done: ${durationSec.toFixed(1)}s short → ${path.relative(process.cwd(), outPath)}`);
+    await renderMedia({
+      composition,
+      serveUrl,
+      codec: "h264",
+      outputLocation: outPath,
+      inputProps: inputPropsRecord,
+      overwrite: true,
+    });
+
+    console.log(
+      `done: ${durationSec.toFixed(1)}s short → ${path.relative(process.cwd(), outPath)}`,
+    );
+  } finally {
+    assets.dispose();
+    if (serveUrl) rmSync(serveUrl, { recursive: true, force: true });
+  }
 }
 
 main().catch((err: unknown) => {
