@@ -2,6 +2,11 @@
 
 Code-defined, deterministic, hand-drawn-style components that any scene can compose.
 
+> **Scope changed (2026-09-26):** character and scene images now come from local AI stills
+> (see [ADR 0002](../docs/adr/0002-visuals-local-ai-stills.md)). The kit stays for **text-hero
+> beats, diagrams and overlays**, where exact text matters. The stick-figure actors below remain
+> for old scripts and tests; do not add new character art here.
+
 ## Concept
 A **scene** is data: a `SceneSpec` is an ordered list of **layers**, each naming a registered **component** by id and passing untyped props. `composeScene(spec)` looks up each component in the **registry** and renders the layers back-to-front. The script parser (#5) and the stills batch (#6) speak this format.
 

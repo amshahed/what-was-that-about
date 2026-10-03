@@ -13,7 +13,7 @@ import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
 import { mapBeatsToTimeline } from "../render/timeline";
-import { TONE_MUSIC, SFX_FILES, buildSfxEvents } from "../render/mix";
+import { TONE_MUSIC, sfxFile, buildSfxEvents } from "../render/mix";
 import { resolveEpisodeDir, requireFile, checkFactgate } from "./lib/episode";
 import type { AlignmentResult } from "../render/align";
 import type { RoughCutProps } from "../render/remotion/compositions/RoughCut";
@@ -62,7 +62,7 @@ async function main() {
 
   const sfxDir = path.resolve("shared", "sfx");
   const sfxEvents = buildSfxEvents(beats, (name) => {
-    const file = SFX_FILES[name];
+    const file = sfxFile(name);
     if (!file) { console.warn(`unknown SFX "${name}" (skipping)`); return null; }
     const p = path.join(sfxDir, file);
     if (!existsSync(p)) { console.warn(`SFX file not found: ${p} (skipping)`); return null; }

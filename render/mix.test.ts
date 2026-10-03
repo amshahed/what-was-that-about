@@ -4,6 +4,8 @@ import {
   musicVolumeAtFrame,
   MUSIC_VOLUME_FULL,
   MUSIC_VOLUME_DUCK,
+  sfxFile,
+  sfxKey,
   SFX_FILES,
   TONE_MUSIC,
 } from "./mix";
@@ -15,20 +17,38 @@ function beat(
   durationFrames: number,
   sfx: string[] = [],
 ): BeatEntry {
-  return { narration, startFrame, durationFrames, sfx, scene: { layers: [] }, zoom: false, hold: false };
+  return {
+    narration,
+    startFrame,
+    durationFrames,
+    sfx,
+    scene: { layers: [] },
+    zoom: false,
+    hold: false,
+  };
 }
 
 describe("buildSfxEvents", () => {
   it("maps sfx names to events using the resolve callback", () => {
-    const beats = [
-      beat("first", 0, 30, ["record scratch"]),
-      beat("second", 30, 30, ["ding"]),
-    ];
-    const resolve = (name: string) => SFX_FILES[name] ? `/sfx/${SFX_FILES[name]}` : null;
+    const beats = [beat("first", 0, 30, ["record scratch"]), beat("second", 30, 30, ["ding"])];
+    const resolve = (name: string) => {
+      const file = sfxFile(name);
+      return file ? `/sfx/${file}` : null;
+    };
     const events = buildSfxEvents(beats, resolve);
     expect(events).toHaveLength(2);
     expect(events[0]).toEqual({ startFrame: 0, src: "/sfx/record-scratch.wav" });
     expect(events[1]).toEqual({ startFrame: 30, src: "/sfx/ding.wav" });
+  });
+
+  it("normalizes hyphenated and mixed-case names before resolving", () => {
+    const beats = [beat("x", 0, 30, ["record-scratch", "Drum_Hit"])];
+    const resolve = (name: string) => {
+      const file = sfxFile(name);
+      return file ? `/sfx/${file}` : null;
+    };
+    const events = buildSfxEvents(beats, resolve);
+    expect(events.map((e) => e.src)).toEqual(["/sfx/record-scratch.wav", "/sfx/drum-hit.wav"]);
   });
 
   it("skips unknown sfx names (resolve returns null)", () => {
@@ -39,7 +59,10 @@ describe("buildSfxEvents", () => {
 
   it("emits multiple events for a single beat with multiple sfx tags", () => {
     const beats = [beat("text", 15, 30, ["boing", "whoosh"])];
-    const resolve = (name: string) => SFX_FILES[name] ? `/sfx/${SFX_FILES[name]}` : null;
+    const resolve = (name: string) => {
+      const file = sfxFile(name);
+      return file ? `/sfx/${file}` : null;
+    };
     const events = buildSfxEvents(beats, resolve);
     expect(events).toHaveLength(2);
     expect(events[0]!.startFrame).toBe(15);
@@ -56,7 +79,7 @@ describe("buildSfxEvents", () => {
 describe("musicVolumeAtFrame", () => {
   const beats = [
     beat("narration", 10, 20),
-    beat("", 40, 10),    // empty narration — treated as non-narration for ducking
+    beat("", 40, 10), // empty narration — treated as non-narration for ducking
     beat("more", 60, 15),
   ];
 
@@ -85,9 +108,26 @@ describe("musicVolumeAtFrame", () => {
   });
 });
 
+describe("sfxFile", () => {
+  it("resolves known names in any spelling", () => {
+    expect(sfxFile("Record-Scratch")).toBe("record-scratch.wav");
+    expect(sfxFile("drum_hit")).toBe("drum-hit.wav");
+  });
+
+  it("has only normalized keys, so every entry is reachable", () => {
+    for (const key of Object.keys(SFX_FILES)) expect(sfxKey(key)).toBe(key);
+  });
+
+  it("returns undefined for unknown, empty and prototype names", () => {
+    expect(sfxFile("kazoo")).toBeUndefined();
+    expect(sfxFile("---")).toBeUndefined();
+    expect(sfxFile("constructor")).toBeUndefined();
+  });
+});
+
 describe("TONE_MUSIC", () => {
   it("covers all tone values", () => {
-    const tones = ["light", "balanced", "heavy", "balanced-heavy"] as const;
+    const tones = ["light", "balanced", "heavy"] as const;
     for (const tone of tones) {
       expect(TONE_MUSIC[tone]).toMatch(/\.mp3$/);
     }

@@ -3,14 +3,14 @@
 An episode is a **YAML** file (`episodes/<book>/script.yml`) that doubles as the **edit decision list**: each beat carries the narration to speak, the scene to show, and any timing/comedy tags. Downstream slices consume the parsed shape:
 
 - **#6 stills batch** renders each beat's `scene` to a PNG.
-- **#7 assembly** uses `HOLD` / `ZOOM` to drive Ken Burns / dwell, syncing cuts to recorded narration.
-- **#9 SFX/music** drops a sting for each `SFX:<name>`.
+- **#8 assembly** uses `ZOOM` to drive Ken Burns (`HOLD` is parsed but not used yet), syncing cuts to recorded narration.
+- **#10 SFX/music** drops a sting for each `SFX:<name>`.
 
 ## Schema
 
 ```yaml
-id: string                 # stable episode id (e.g. "ubik-pilot")
-tone: light | balanced | heavy | balanced-heavy
+id: string                 # stable episode id = the slug (e.g. "ubik")
+tone: light | balanced | heavy
 beats:
   - narration: string      # what the narrator says (multiline OK)
     scene:
@@ -23,15 +23,20 @@ beats:
 
 A canonical example lives at [`episodes/sample/script.yml`](../episodes/sample/script.yml).
 
+**Planned (slice V2):** a `scene` can hold an AI image instead of `layers`:
+`image: string` (the prompt), `cast: [string]?` (character files in `shared/characters/`) and
+`seed: number?`. See [`docs/episode-workflow.md`](../docs/episode-workflow.md). Today the parser
+requires `layers` and ignores `image`, `cast` and `seed` without a warning.
+
 ## Tag grammar
 
 | Tag | Meaning |
 |---|---|
-| `HOLD` | Linger on this beat (assembly extends dwell time). |
+| `HOLD` | Linger on this beat. *Parsed and passed through; assembly does not extend dwell yet (planned).* |
 | `ZOOM` | Ken Burns punch-in during this beat. |
-| `SFX:<name>` | Drop the named sound sting at this beat. Multiple SFX tags accumulate. |
+| `SFX:<name>` | Drop the named sound sting at this beat. Multiple SFX tags accumulate. Names are case-insensitive; `-` and `_` count as spaces. |
 
-Anything else is an error.
+Anything else is an error — including `SECTION:` (planned, see PRD §6.4). Mark sections with YAML comments for now: `# --- SECTION: recap ---`.
 
 ## Parsing
 
