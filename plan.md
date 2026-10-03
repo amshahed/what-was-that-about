@@ -51,8 +51,8 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #12 | Per-episode content workflow scaffolding | AFK | #5 | 🟩 merged (PR #25) |
 | V0 | Local GPU tools: ComfyUI + Flux GGUF, faster-whisper env, `tools/` recipes, Poseidon look | **HITL** | — | 🟩 merged (PR: V0 local tools + docs) |
 | V1 (#27) | Local Whisper in `align` (faster-whisper engine; OpenAI API as fallback) | AFK | V0 | 🟩 merged (PR #28) |
-| V2 | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | ⬜ |
-| #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 (writing can start now) | ⬜ |
+| V2 (#29) | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | 🟩 merged (PR #30) |
+| #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 ✅ | ⬜ unblocked |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ Poseidon look locked "for now" |
 | V3 | Poseidon LoRA trained on the approved reference set | **HITL** | V2, pilot feedback | ⬜ later |
 | V4 | ControlNet pose control (+ IP-Adapter) for precise poses | AFK | V2 | ⬜ later |
@@ -125,12 +125,11 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 **Phase 0 (pipeline skeleton) complete.** **Phase 0.5 (local upgrade) in progress.**
 
 Next, in this order:
-1. **V2 — AI scene generation.** Write `plans/<issue#>-ai-scene-generation.md`, get approval, build.
-2. **#13 — Ubik pilot**, in parallel with V2 for the writing steps:
+1. **#13 — Ubik pilot.** Every pipeline step is built:
    1. `npm run new-episode ubik`.
    2. Fill in `episodes/ubik/seed.md` (angle + tone: Heavy, locked decision #10).
    3. Claude researches → `notes/research.md`; drafts `script.yml` with an image prompt per beat.
    4. Verify facts → set `Status: ✅ approved` in `notes/factcheck.md`.
-   5. After V2: `npm run generate-scenes ubik` → review stills.
+   5. `npm run generate-scenes ubik` → review `out/scenes.html` → `-- --reroll N` / `-- --pick N=k` for misses.
    6. Record narration → `audio/narration.wav`.
    7. `npm run align ubik` → `npm run assemble ubik`.

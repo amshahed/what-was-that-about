@@ -1,0 +1,15 @@
+# Channel look for AI stills. Changing anything here makes existing stills "stale":
+# generate-scenes regenerates them; assemble still uses the old files and warns.
+#
+# Prompt order: prefix → cast descriptions → the beat's image text → suffix.
+# The prefix comes first because CLIP-L reads only ~77 tokens.
+prefix: >-
+  Cartoon webcomic panel in the style of Cyanide and Happiness and Crayon Capital: thick clean black
+  outlines, flat bright colors, minimal shading, simple shapes, wide 16:9 composition.
+suffix: >-
+  Simple uncluttered background with a few large flat shapes, main subject in the center of the frame.
+  Unsigned artwork, clean empty corners, no text, no lettering.
+width: 1344
+height: 768
+steps: 20
+guidance: 3.5

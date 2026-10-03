@@ -7,7 +7,7 @@ import { parse as parseYaml } from "yaml";
 import { has, ids } from "./registry";
 import "./library"; // populate the registry before component-id validation
 import type { Layer, SceneSpec } from "./scene";
-import type { Beat, Script, Tone } from "./script";
+import type { Beat, BeatScene, ImageScene, KitScene, Script, Tone } from "./script";
 
 export class ScriptParseError extends Error {
   constructor(
@@ -81,24 +81,108 @@ function parseLayer(raw: unknown, path: string): Layer {
   return { component, props: (props as Record<string, unknown> | undefined) ?? {} };
 }
 
-function parseScene(raw: unknown, path: string): SceneSpec {
+export interface ParseOptions {
+  /** Known character ids (shared/characters/*.yml). When given, unknown `cast` ids are errors. */
+  characters?: ReadonlySet<string>;
+}
+
+const KIT_KEYS = new Set(["layers", "caption", "id"]);
+const IMAGE_KEYS = new Set(["image", "cast", "seed", "caption"]);
+const CAST_ID = /^[a-z0-9][a-z0-9-]*$/;
+const MAX_CAST = 3;
+const MAX_SEED = 2 ** 32 - 1;
+
+function rejectUnknownKeys(obj: Record<string, unknown>, allowed: Set<string>, path: string): void {
+  for (const key of Object.keys(obj)) {
+    if (!allowed.has(key)) {
+      throw new ScriptParseError(
+        `${path}.${key}`,
+        `unknown scene field "${key}" (allowed here: ${[...allowed].join(", ")})`,
+      );
+    }
+  }
+}
+
+function parseCaption(caption: unknown, path: string): string | undefined {
+  if (caption === undefined) return undefined;
+  if (typeof caption !== "string") {
+    throw new ScriptParseError(path, "caption must be a string");
+  }
+  if (caption.trim() === "") {
+    // composeScene drops empty captions silently; surface the authoring mistake instead.
+    throw new ScriptParseError(path, "caption must be non-empty (omit the field instead)");
+  }
+  return caption;
+}
+
+function parseImageScene(
+  obj: Record<string, unknown>,
+  path: string,
+  opts: ParseOptions,
+): ImageScene {
+  rejectUnknownKeys(obj, IMAGE_KEYS, path);
+  const image = reqString(obj.image, `${path}.image`, "image prompt");
+  const cast: string[] = [];
+  if (obj.cast !== undefined) {
+    const arr = reqArray(obj.cast, `${path}.cast`, "cast");
+    if (arr.length > MAX_CAST) {
+      throw new ScriptParseError(
+        `${path}.cast`,
+        `at most ${MAX_CAST} characters per image (more ones blend together)`,
+      );
+    }
+    arr.forEach((c, i) => {
+      const p = `${path}.cast[${i}]`;
+      if (typeof c !== "string" || !CAST_ID.test(c)) {
+        throw new ScriptParseError(p, `character id must be lowercase kebab-case, got ${JSON.stringify(c)}`);
+      }
+      if (cast.includes(c)) throw new ScriptParseError(p, `"${c}" is listed twice`);
+      if (opts.characters && !opts.characters.has(c)) {
+        const known = [...opts.characters].sort().join(", ") || "none";
+        throw new ScriptParseError(
+          p,
+          `unknown character "${c}" (known: ${known}) — add shared/characters/${c}.yml`,
+        );
+      }
+      cast.push(c);
+    });
+  }
+  let seed: number | undefined;
+  if (obj.seed !== undefined) {
+    const s = obj.seed;
+    if (typeof s !== "number" || !Number.isInteger(s) || s < 0 || s > MAX_SEED) {
+      throw new ScriptParseError(`${path}.seed`, `seed must be an integer from 0 to ${MAX_SEED}`);
+    }
+    seed = s;
+  }
+  const caption = parseCaption(obj.caption, `${path}.caption`);
+  return { kind: "image", image, cast, ...(seed !== undefined && { seed }), ...(caption !== undefined && { caption }) };
+}
+
+function parseScene(raw: unknown, path: string, opts: ParseOptions): BeatScene {
   const obj = reqObject(raw, path, "scene");
+  const hasLayers = obj.layers !== undefined;
+  const hasImage = obj.image !== undefined;
+  if (hasLayers && hasImage) {
+    throw new ScriptParseError(path, 'pick one: "layers" (code-kit scene) or "image" (AI still)');
+  }
+  if (!hasLayers && !hasImage) {
+    throw new ScriptParseError(path, 'scene needs "layers" (code-kit scene) or "image" (AI still)');
+  }
+  if (hasImage) return parseImageScene(obj, path, opts);
+  rejectUnknownKeys(obj, KIT_KEYS, path);
+  return parseKitScene(obj, path);
+}
+
+function parseKitScene(obj: Record<string, unknown>, path: string): KitScene {
   const layersRaw = reqArray(obj.layers, `${path}.layers`, "layers");
   if (layersRaw.length === 0) {
     throw new ScriptParseError(`${path}.layers`, "scene must have at least one layer");
   }
   const layers = layersRaw.map((l, i) => parseLayer(l, `${path}.layers[${i}]`));
-  const caption = obj.caption;
-  if (caption !== undefined) {
-    if (typeof caption !== "string") {
-      throw new ScriptParseError(`${path}.caption`, "caption must be a string");
-    }
-    if (caption.trim() === "") {
-      // composeScene drops empty captions silently; surface the authoring mistake instead.
-      throw new ScriptParseError(`${path}.caption`, "caption must be non-empty (omit the field instead)");
-    }
-  }
-  return { layers, caption: caption as string | undefined };
+  const caption = parseCaption(obj.caption, `${path}.caption`);
+  const spec: SceneSpec = { layers, caption };
+  return spec;
 }
 
 const SFX_PREFIX = "SFX:";
@@ -132,15 +216,15 @@ function parseTags(raw: unknown, path: string): { hold: boolean; zoom: boolean; 
   return { hold, zoom, sfx };
 }
 
-function parseBeat(raw: unknown, path: string): Beat {
+function parseBeat(raw: unknown, path: string, opts: ParseOptions): Beat {
   const obj = reqObject(raw, path, "beat");
   const narration = reqString(obj.narration, `${path}.narration`, "narration");
-  const scene = parseScene(obj.scene, `${path}.scene`);
+  const scene = parseScene(obj.scene, `${path}.scene`, opts);
   const { hold, zoom, sfx } = parseTags(obj.tags, `${path}.tags`);
   return { narration, scene, hold, zoom, sfx };
 }
 
-export function parseScript(yamlText: string): Script {
+export function parseScript(yamlText: string, opts: ParseOptions = {}): Script {
   let raw: unknown;
   try {
     raw = parseYaml(yamlText);
@@ -155,6 +239,6 @@ export function parseScript(yamlText: string): Script {
   if (beatsRaw.length === 0) {
     throw new ScriptParseError("$.beats", "script must have at least one beat");
   }
-  const beats = beatsRaw.map((b, i) => parseBeat(b, `$.beats[${i}]`));
+  const beats = beatsRaw.map((b, i) => parseBeat(b, `$.beats[${i}]`, opts));
   return { id, tone, beats };
 }

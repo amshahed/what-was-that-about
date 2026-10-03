@@ -12,7 +12,7 @@ The pipeline enforces one gate: assembly and Shorts do not run until the fact-ch
 | 2 Research             | C     | `notes/research.md`                          |
 | 3 Script (EDL)         | C     | `script.yml`                                 |
 | 3b Fact-check gate ⛔  | U     | `notes/factcheck.md` → `Status: ✅ approved` |
-| 4 Scene images         | C + U | `scenes/*.png` _(planned: slice V2)_         |
+| 4 Scene images         | C + U | `scenes/*.png`, `out/scenes.html`            |
 | 5 Narration            | U     | `audio/narration.wav`                        |
 | 6 Alignment + assembly | C + U | `out/alignment.json`, `out/roughcut.mp4`     |
 | 7 Shorts               | C + U | `out/short-*.mp4`                            |
@@ -95,7 +95,7 @@ SFX names: `record scratch` · `boing` · `ding` · `whoosh` · `drum hit`. Case
 
 Each beat has one picture. Pick one of two kinds:
 
-- **AI still (default after slice V2)** — a short image prompt and the cast list:
+- **AI still (default)** — a short image prompt and the cast list:
   ```yaml
   scene:
     image: "Poseidon facepalming at a desk buried in paperwork"
@@ -103,13 +103,17 @@ Each beat has one picture. Pick one of two kinds:
     seed: 2041 # optional — pin it to keep a take you like
     caption: "Still can't escape the 9 to 5."
   ```
-  Describe the action, expression and setting. Do not describe the character's look — the
-  character file holds it. The style prompt is fixed, so do not add style words.
+  Describe the action, expression and setting ("…; setting: …"). Do not describe the character's
+  look — the character file holds it. The style prompt is fixed, so do not add style words. List
+  up to 3 characters in `cast`, left to right; prefer one per image. Keep the subject in the
+  middle of the frame — Shorts show only the middle third. Avoid text in the image; put words in
+  `caption` or a code-kit beat. `layers` and `image` cannot both be set; unknown fields and
+  unknown characters are errors.
 - **Code-kit scene** — for text-hero beats (a giant word, number or `?`) and diagrams. Image
   models draw text badly, so text stays code-rendered. See [`kit/README.md`](../kit/README.md).
 
-Until V2 ships, every beat needs code-kit `layers`. The parser ignores `image`, `cast` and `seed`
-without a warning, so they do nothing yet.
+`caption` (both kinds) shows in a bar at the top of the frame; the narration subtitles use the bottom.
+Characters live in `shared/characters/` (see its README); the channel look in `shared/style.yml`.
 
 ### Keeping it funny
 
@@ -132,7 +136,7 @@ without a warning, so they do nothing yet.
 
 ---
 
-## Stage 4 — Scene images _(planned: slice V2)_
+## Stage 4 — Scene images
 
 Start ComfyUI first: `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
 
@@ -141,11 +145,23 @@ npm run generate-scenes <slug>
 ```
 
 Sends each AI-still beat to the local ComfyUI (Flux) and writes one PNG per beat to
-`scenes/`. About 45–60 s per image. A re-run regenerates only the beats whose prompt, cast or
-seed changed. From the Mac, set `COMFY_URL=http://<desktop LAN IP>:8188` (now `192.168.0.102`; reserve it in
-the router's DHCP settings).
+`scenes/` (gitignored). About 50 s per image, plus ~1 min to load the model on the first one: a
+40-beat episode takes ~35 min, unattended. A re-run makes only what is missing or stale, so an
+interrupted run simply continues. When it finishes it unloads the models, so `npm run align` gets
+the VRAM. From the Mac, set `COMFY_URL=http://<desktop LAN IP>:8188` (now `192.168.0.102`; reserve
+it in the router's DHCP settings).
 
-Review the stills. For a bad image, change the prompt or the seed, then run the command again.
+**Review:** open `out/scenes.html` — every beat in order, with beat numbers, narration, seed and
+the full prompt on hover. Name the misses (e.g. "7 has two tridents, 12 has bad hands"), then:
+
+```
+npm run generate-scenes <slug> -- --reroll 7,12   # 3 new candidates per beat, shown on the page
+npm run generate-scenes <slug> -- --pick 7=2,12=1 # keep a candidate: pins its seed in script.yml
+```
+
+Other options (after `--`): `--only 2,5-7`, `--force`, `--dry-run` (prompts only, no ComfyUI),
+`--prune` (delete unused PNGs: old takes and unpicked candidates). Editing a beat's `image` text
+also gives a new image on the next run.
 
 ---
 
@@ -192,7 +208,8 @@ Requires:
 - `script.yml`
 - `out/alignment.json`
 - `audio/narration.wav`
-- `scenes/*.png` for the AI-still beats _(after V2)_
+- `scenes/*.png` for the AI-still beats (missing ones stop the render with the exact
+  `generate-scenes … --only …` command; stale ones only warn)
 - (optional) music and SFX files in `shared/` — see `shared/assets.md`. Missing files only warn.
 
 Writes `out/roughcut.mp4` (16:9, Ken Burns, line-pop captions, music, SFX).
@@ -234,11 +251,13 @@ episodes/<slug>/
   notes/
     research.md        — research + claims to verify
     factcheck.md       — render gate (must reach "Status: ✅ approved")
-  scenes/
-    <beat>.png         — generated stills (gitignored; reproducible from prompt + seed)
+  scenes/              — gitignored; reproducible from prompt + seed + pinned models
+    <prompt-words>-<key>.png — one per AI-still beat (plus re-roll candidates)
+    manifest.json      — prompt, seed and settings per file
   audio/
     narration.wav      — recorded narration (gitignored)
   out/                 — all gitignored
+    scenes.html        — review page for the stills
     alignment.json     — Whisper word timestamps
     roughcut.mp4       — 16:9 full episode
     short-*.mp4        — 9:16 Shorts

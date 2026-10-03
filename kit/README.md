@@ -41,7 +41,7 @@ const spec: SceneSpec = {
 | `prop:watch` | prop | `x, y` |
 | `prop:wall-clock` | prop | `x, y` |
 | `prop:plant` | prop | `x, y` |
-| `caption` | overlay | `text` *(auto-appended by `spec.caption`)* |
+| `caption` | overlay | `text` *(auto-appended by `spec.caption`; bar at the top of the frame)* |
 
 Stage is **1920×1080**, origin top-left.
 

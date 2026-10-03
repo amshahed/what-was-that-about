@@ -10,6 +10,7 @@ import { mkdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderStill } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
+import { isImageScene } from "../kit/script";
 
 function usage(): never {
   console.error("usage: tsx scripts/render-script.ts <episode-dir-or-script.yml>");
@@ -52,12 +53,16 @@ async function main() {
   const width = 4; // beat-001, beat-002, ...
   for (let i = 0; i < script.beats.length; i++) {
     const beat = script.beats[i]!;
+    const n = String(i + 1).padStart(width, "0");
+    if (isImageScene(beat.scene)) {
+      console.log(`  beat ${n} -> AI still (npm run generate-scenes); skipped`);
+      continue;
+    }
     const composition = await selectComposition({
       serveUrl,
       id: "beat-still",
       inputProps: { spec: beat.scene },
     });
-    const n = String(i + 1).padStart(width, "0");
     const output = path.join(outDir, `beat-${n}.png`);
     await renderStill({
       composition,

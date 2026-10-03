@@ -1,11 +1,12 @@
-import type { Beat } from "../kit/script";
-import type { SceneSpec } from "../kit/scene";
+import type { Beat, BeatScene } from "../kit/script";
 import type { AlignmentResult } from "./align";
 
 export interface BeatEntry {
   startFrame: number;
   durationFrames: number;
-  scene: SceneSpec;
+  scene: BeatScene;
+  /** For AI-still beats: the staticFile() name of the generated PNG (set by assemble / short). */
+  still?: string;
   zoom: boolean;
   hold: boolean;
   narration: string;

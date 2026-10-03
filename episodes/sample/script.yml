@@ -46,3 +46,20 @@ beats:
           props: { x: 850, y: 372 }
       caption: "Now he rules... a 3 p.m. sync."
     tags: ["SFX:record-scratch"]
+
+  # AI-still beats (npm run generate-scenes sample). Describe action, expression and setting;
+  # the character's look comes from shared/characters/<id>.yml.
+  - narration: |
+      So he picked up a book. A thick one.
+    scene:
+      image: "Poseidon sits at a cluttered desk reading a thick paperback novel, eyebrows raised in disbelief; setting: a gloomy underwater cave office with a round porthole"
+      seed: 3790799677
+      cast: [poseidon]
+      caption: "Self-improvement, god edition."
+    tags: [ZOOM]
+
+  - narration: |
+      And in the book, there was a spray can that fixes reality.
+    scene:
+      image: "a single dusty aerosol spray can standing alone on an empty shelf, glowing faintly; setting: a dim, run-down 1970s convenience store"
+      caption: "Safe when used as directed."

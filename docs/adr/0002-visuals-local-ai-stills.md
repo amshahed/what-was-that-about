@@ -1,6 +1,6 @@
 # ADR 0002 — Visuals: local AI stills (ComfyUI + Flux GGUF)
 
-- **Status:** Accepted
+- **Status:** Accepted — pipeline integration implemented in slice V2 (#29)
 - **Date:** 2026-09-26
 - **Deciders:** project owner + Claude
 - **Relates to:** PRD §6.0, §8.1, §8.6; supersedes the stick-figure character approach of slices #4 / #6

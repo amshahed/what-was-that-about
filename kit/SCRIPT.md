@@ -17,16 +17,25 @@ beats:
       layers:              # ≥1 layer, painted back-to-front
         - component: string       # registered kit id (bg:..., actor:..., prop:..., caption)
           props: { ... }          # untyped; the component's adapter validates at render time
-      caption: string?     # optional bottom-bar caption (auto-appended as a layer)
+      caption: string?     # optional caption bar at the top of the frame (auto-appended as a layer)
     tags: [string]?        # optional list — see Tag grammar below
 ```
 
 A canonical example lives at [`episodes/sample/script.yml`](../episodes/sample/script.yml).
 
-**Planned (slice V2):** a `scene` can hold an AI image instead of `layers`:
-`image: string` (the prompt), `cast: [string]?` (character files in `shared/characters/`) and
-`seed: number?`. See [`docs/episode-workflow.md`](../docs/episode-workflow.md). Today the parser
-requires `layers` and ignores `image`, `cast` and `seed` without a warning.
+**AI-still scene** (instead of `layers`; made by `npm run generate-scenes`):
+
+```yaml
+    scene:
+      image: string          # what the image shows: action, expression, setting
+      cast: [string]?        # ≤ 3 character ids (shared/characters/<id>.yml), left to right
+      seed: number?          # integer 0…2^32-1; pins a take (set by --pick)
+      caption: string?
+```
+
+Rules: a scene has exactly one of `layers` / `image`; unknown scene fields are errors; cast ids are
+lowercase kebab-case, unique, and — when the CLI passes the known characters — must have a file.
+The parser returns `scene.kind` = `"image"` for these (`"kit"` or absent for layer scenes).
 
 ## Tag grammar
 

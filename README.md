@@ -11,7 +11,7 @@ seed → research → script.yml → fact-check gate → scene images → narrat
 | Step                | Tool                                                                       | Runs on            |
 | ------------------- | -------------------------------------------------------------------------- | ------------------ |
 | Script (beats, EDL) | `episodes/<slug>/script.yml`                                               | any machine        |
-| Scene images        | Code kit today; ComfyUI + Flux.1 Dev GGUF (local) after slice V2 (planned) | Windows GPU (3080) |
+| Scene images        | ComfyUI + Flux.1 Dev GGUF (local), cartoon style; code kit for text scenes | Windows GPU (3080) |
 | Narration timing    | faster-whisper (local); OpenAI Whisper API as fallback                     | Windows GPU        |
 | Video (16:9 + 9:16) | Remotion: Ken Burns, captions, music, SFX                                  | Windows desktop    |
 
@@ -37,7 +37,7 @@ Design decisions: [`docs/adr/`](./docs/adr).
    powershell -ExecutionPolicy Bypass -File tools\whisper\setup.ps1
    ```
 4. Optional: put the music and SFX files in `shared\`. See [`shared/assets.md`](./shared/assets.md).
-5. Start ComfyUI before you generate images (V2, or `tools/comfyui/prompts/poseidon_refs.py`):
+5. Start ComfyUI before `npm run generate-scenes` (or `tools/comfyui/prompts/poseidon_refs.py`):
    `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
 6. Start an episode: `npm run new-episode <slug>`. See [`docs/episode-workflow.md`](./docs/episode-workflow.md).
 
@@ -63,7 +63,7 @@ Spec-driven, one slice at a time:
 
 - **Phase 0 — pipeline skeleton:** done (slices #2–#12).
 - **Phase 0.5 — local upgrade:** in progress. Done: ComfyUI + Flux, Poseidon look, Whisper env,
-  `tools/` recipes, local Whisper in `align` (V1). Next: AI scene generation (V2).
-- **Phase 1 — Ubik pilot (#13):** writing can start now; rendering with AI stills waits for V2.
+  `tools/` recipes, local Whisper in `align` (V1), AI scene generation (V2).
+- **Phase 1 — Ubik pilot (#13):** next. Every step of the pipeline runs.
 
 Live status: [`plan.md`](./plan.md).

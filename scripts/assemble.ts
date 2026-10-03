@@ -10,10 +10,10 @@ import path from "node:path";
 import { readFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
-import { parseScript } from "../kit/script-parser";
 import { mapBeatsToTimeline } from "../render/timeline";
 import { TONE_MUSIC, sfxFile, buildSfxEvents } from "../render/mix";
 import { RenderAssets } from "./lib/render-assets";
+import { loadEpisodeScenes, stageStills } from "./lib/scene-assets";
 import { resolveEpisodeDir, requireFile, checkFactgate } from "./lib/episode";
 import type { AlignmentResult } from "../render/align";
 import type { RoughCutProps } from "../render/remotion/compositions/RoughCut";
@@ -46,7 +46,9 @@ async function main() {
     "Place the narration WAV at episodes/<slug>/audio/narration.wav (WAV mono 44.1k 16-bit, peak -6..-3 dBFS).",
   );
 
-  const script = parseScript(readFileSync(scriptPath, "utf8"));
+  // Parses the script (cast ids checked against shared/characters) and plans its AI stills.
+  const scenes = loadEpisodeScenes(episodeDir, scriptPath);
+  const script = scenes.script;
   const alignment = JSON.parse(readFileSync(alignmentPath, "utf8")) as AlignmentResult;
 
   console.log(`assembling: ${script.id} (${script.tone}, ${script.beats.length} beats)`);
@@ -59,6 +61,8 @@ async function main() {
   const musicPath = path.resolve("shared", "music", musicFile);
   // Media for the render is staged into a public folder (out/ is gitignored).
   const assets = new RenderAssets(path.join(episodeDir, "out", ".render-public-roughcut"));
+  // AI stills: stops with the generate-scenes command if any are missing.
+  for (const [i, name] of stageStills(episodeDir, arg, scenes.plan, assets)) beats[i]!.still = name;
   const musicSrc = existsSync(musicPath) ? assets.add(musicPath, `music/${musicFile}`) : "";
   if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);
 

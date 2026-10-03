@@ -1,0 +1,17 @@
+# Locked look (2026-09-26, build option B). The generator adds `description` to every prompt that
+# casts poseidon; `short` is used when 2–3 characters share one image. Text only — no images in git.
+id: poseidon
+name: Poseidon
+description: >-
+  Poseidon, a stocky barrel-chested middle-aged cartoon Greek god with a broad thick torso, big round
+  belly, thick strong arms, short thick legs, a big round head, a huge fluffy white beard and wild
+  spiky white hair, thick bushy white eyebrows, big round pink nose, small round eyes, wearing a
+  teal-blue toga draped over his left shoulder leaving his right shoulder and right side of his chest
+  bare, knee-length, bare feet, with a single golden trident that is entirely shiny gold including the
+  whole shaft, held in one hand or leaning nearby
+short: >-
+  Poseidon, stocky cartoon Greek god, huge fluffy white beard, wild white hair, big pink nose,
+  teal-blue toga over one shoulder, a single all-gold trident
+notes: >-
+  Reference prompts and seeds: tools/comfyui/prompts/poseidon_refs.py. Prompts alone do not hold
+  precise hand poses (facepalm, raised finger); re-roll, or wait for ControlNet (V4).
