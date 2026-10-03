@@ -21,6 +21,22 @@ function alignment(words: Array<{ word: string; start: number; end: number }>, d
 }
 
 describe("mapBeatsToTimeline", () => {
+  it("does not anchor a beat on a number word (Whisper writes digits)", () => {
+    const beats = [beat("Hello there"), beat("Nine guards stood watching")];
+    const aln = alignment([
+      { word: " Hello", start: 0.0, end: 0.3 },
+      { word: " there", start: 0.4, end: 0.7 },
+      { word: " 9", start: 2.0, end: 2.2 },
+      { word: " guards", start: 2.3, end: 2.7 },
+      { word: " stood", start: 2.8, end: 3.0 },
+      { word: " watching.", start: 3.1, end: 3.5 },
+    ], 4.0);
+
+    const entries = mapBeatsToTimeline(beats, aln, FPS);
+    // Anchors on "guards" (2.3 s), not on "nine", which never appears in the transcript.
+    expect(entries[1]!.startFrame).toBe(Math.round(2.3 * FPS));
+  });
+
   it("maps three beats to correct start frames", () => {
     const beats = [beat("Hello world"), beat("this is great"), beat("goodbye now")];
     const aln = alignment([

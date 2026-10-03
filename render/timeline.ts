@@ -24,9 +24,24 @@ function normalize(word: string): string {
   return word.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// Whisper writes spoken numbers as digits ("nine to five" → "9 to 5"), so a number in the script
+// rarely matches the transcript token. Numbers never serve as a beat's anchor word.
+const NUMBER_WORDS = new Set([
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+  "nineteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+  "hundred", "thousand", "million", "billion",
+]);
+
+function isNumberWord(w: string): boolean {
+  return /^\d+(st|nd|rd|th|s)?$/.test(w) || NUMBER_WORDS.has(w);
+}
+
 function significantWords(text: string, n = 3): string[] {
   const words = text.trim().split(/\s+/).map(normalize).filter((w) => w.length > 0);
-  const significant = words.filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+  const significant = words.filter(
+    (w) => w.length > 2 && !STOP_WORDS.has(w) && !isNumberWord(w),
+  );
   // Fall back to all non-empty words if nothing survives the filter — beats with very
   // short narration (e.g. "OK.") should still attempt a match rather than always interpolating.
   return (significant.length > 0 ? significant : words).slice(0, n);

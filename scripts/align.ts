@@ -2,31 +2,19 @@
 // episode's narration WAV and writes word timestamps to out/alignment.json.
 //
 // Reads:  episodes/<slug>/audio/narration.wav
+//         episodes/<slug>/script.yml   (optional — its opening narration helps Whisper spell names)
 // Writes: episodes/<slug>/out/alignment.json
+//
+// Engine: ALIGN_ENGINE=local (default, faster-whisper on the GPU) or openai (needs OPENAI_API_KEY).
 
 import path from "node:path";
-import { mkdirSync, writeFileSync, existsSync, statSync } from "node:fs";
-import { alignAudio } from "../render/align";
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { alignAudio, resolveEngine } from "../render/align";
+import { resolveEpisodeDir } from "./lib/episode";
+import { spellingPrompt } from "./lib/spelling-prompt";
 
 function usage(): never {
   console.error("usage: tsx scripts/align.ts <episode-slug-or-dir>");
-  process.exit(2);
-}
-
-function resolveEpisodeDir(arg: string): string {
-  // Accept either the slug ("ubik") or a full/relative path to the episode dir.
-  // path.resolve discards earlier segments when it hits an absolute component, so
-  // avoid probing the same path twice when arg is already absolute.
-  const asDirect = path.resolve(arg);
-  const asSlug = path.resolve("episodes", arg);
-  const candidates = asDirect === asSlug ? [asDirect] : [asSlug, asDirect];
-
-  for (const candidate of candidates) {
-    if (existsSync(candidate) && statSync(candidate).isDirectory()) return candidate;
-  }
-
-  const tried = candidates.join(" and ");
-  console.error(`episode directory not found: tried ${tried}`);
   process.exit(2);
 }
 
@@ -34,6 +22,7 @@ async function main() {
   const arg = process.argv[2];
   if (!arg) usage();
 
+  const engine = resolveEngine();
   const episodeDir = resolveEpisodeDir(arg);
   const audioPath = path.join(episodeDir, "audio", "narration.wav");
 
@@ -45,9 +34,17 @@ async function main() {
     process.exit(2);
   }
 
-  console.log(`aligning: ${path.relative(process.cwd(), audioPath)}`);
+  const scriptPath = path.join(episodeDir, "script.yml");
+  const prompt = existsSync(scriptPath)
+    ? spellingPrompt(readFileSync(scriptPath, "utf8"))
+    : undefined;
+  if (existsSync(scriptPath) && !prompt) {
+    console.warn("script.yml did not parse; aligning without a spelling hint.");
+  }
 
-  const result = await alignAudio(audioPath);
+  console.log(`aligning (${engine}): ${path.relative(process.cwd(), audioPath)}`);
+
+  const result = await alignAudio(audioPath, { engine, prompt });
 
   const outDir = path.join(episodeDir, "out");
   mkdirSync(outDir, { recursive: true });
@@ -61,6 +58,6 @@ async function main() {
 }
 
 main().catch((err: unknown) => {
-  console.error(err);
+  console.error(err instanceof Error ? err.message : err);
   process.exit(1);
 });

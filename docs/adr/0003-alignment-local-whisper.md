@@ -1,6 +1,6 @@
 # ADR 0003 — Alignment engine: local faster-whisper
 
-- **Status:** Accepted (implementation: slice V1)
+- **Status:** Accepted — implemented in slice V1 (#27)
 - **Date:** 2026-10-03
 - **Deciders:** project owner + Claude
 - **Relates to:** PRD §8.3, §8.6; changes the engine chosen in slice #7

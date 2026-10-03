@@ -7,13 +7,13 @@
 // Writes: episodes/<slug>/out/short-<start>-<end>.mp4
 
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
 import { mapBeatsToTimeline } from "../render/timeline";
 import { TONE_MUSIC, sfxFile, buildSfxEvents } from "../render/mix";
+import { RenderAssets } from "./lib/render-assets";
 import { resolveEpisodeDir, requireFile, checkFactgate } from "./lib/episode";
 import type { AlignmentResult } from "../render/align";
 import type { ShortsProps } from "../render/remotion/compositions/Shorts";
@@ -56,7 +56,9 @@ async function main() {
 
   const musicFile = TONE_MUSIC[script.tone];
   const musicPath = path.resolve("shared", "music", musicFile);
-  const musicSrc = existsSync(musicPath) ? pathToFileURL(musicPath).href : "";
+  // Media for the render is staged into a public folder (out/ is gitignored).
+  const assets = new RenderAssets(path.join(episodeDir, "out", ".render-public"));
+  const musicSrc = existsSync(musicPath) ? assets.add(musicPath, `music/${musicFile}`) : "";
   if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);
 
   const sfxDir = path.resolve("shared", "sfx");
@@ -65,7 +67,7 @@ async function main() {
     if (!file) { console.warn(`unknown SFX "${name}" (skipping)`); return null; }
     const p = path.join(sfxDir, file);
     if (!existsSync(p)) { console.warn(`SFX file not found: ${p} (skipping)`); return null; }
-    return pathToFileURL(p).href;
+    return assets.add(p, `sfx/${file}`);
   });
 
   // Re-time selected beats to start at frame 0.
@@ -83,12 +85,18 @@ async function main() {
   const durationSec = totalFrames / FPS;
   console.log(`short: beats ${startIdx}–${endIdx} (${durationSec.toFixed(1)}s @ ${FPS}fps)`);
 
+  // Stage every file before bundle(): it copies the public folder at bundle time.
+  const audioSrc = assets.add(audioPath, "narration.wav");
+
   console.log("bundling Remotion...");
-  const serveUrl = await bundle({ entryPoint: path.resolve("render/remotion/index.ts") });
+  const serveUrl = await bundle({
+    entryPoint: path.resolve("render/remotion/index.ts"),
+    publicDir: assets.dir,
+  });
 
   const inputProps: ShortsProps = {
     beats: selectedBeats,
-    audioSrc: pathToFileURL(path.resolve(audioPath)).href,
+    audioSrc,
     audioStartFrame: offset,
     musicSrc,
     sfxEvents: selectedSfxEvents,

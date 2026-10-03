@@ -106,7 +106,7 @@ Stages flow **seed → research → script → visuals → audio → assembly �
 | 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file contains `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
 | 4 | **Visual generation** | C + U | *(Planned: slice V2. Today every beat renders from the code kit.)* `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat. Text-hero beats render from the code kit. User reviews the stills; Claude re-rolls the ones that miss (new seed or new prompt). See §8.1. |
 | 5 | **Audio recording** | U | User records himself reading the approved script. **Audio contract:** WAV, mono, 44.1 kHz, 16-bit, peak in `-6` to `-3` dBFS, quiet room (see §8.3). |
-| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop after slice V1; the OpenAI Whisper API today — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX; -14 LUFS normalization planned, not built yet). User does a **light polish** pass only on comedic-timing beats. |
+| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop; the OpenAI Whisper API as fallback — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX; -14 LUFS normalization planned, not built yet). User does a **light polish** pass only on comedic-timing beats. |
 | 7 | **Shorts** | C + U | **Two pipelines** — see §7.7. **(A) Auto-suggested:** post-long-form, Claude proposes 1–3 candidate cuts (intro hook, mid-video bit, etc.) from the cold-open and tagged beats; user picks. **(B) Custom:** standalone Shorts authored at repo root `shorts/<id>/` — can slice from anywhere across episodes, with their own music/voice; lighter-weight pipeline. |
 | 8 | **Publish** | U | Title, thumbnail, description/tags, upload, schedule. |
 
@@ -145,7 +145,7 @@ This lets assembly be comedic-timing-aware *automatically*, without manual editi
 
 **Engine — locked (2026-10-03): local faster-whisper** (`large-v3-turbo`, CUDA) on the GPU desktop. User records reading the script → faster-whisper returns word-level timestamps → each script beat is mapped to *when he actually said it* → cut points snap to real delivery. Zero cost, no API key, offline. Tested: 13 s of audio in 0.5 s; a 15-min episode takes about 1–2 min.
 
-> **Changed from the OpenAI Whisper API.** The API was first chosen for zero install and Mac portability. The pipeline now runs on the GPU desktop anyway (§8.1), so the local engine wins. The alignment step stays a single boundary (`render/align.ts`, `audio → word-timestamps`). The OpenAI API stays as a fallback engine, chosen by a setting, for runs on a machine without the GPU. Whisper writes numbers as digits ("9 to 5"), so beat matching must normalize numbers.
+> **Changed from the OpenAI Whisper API.** The API was first chosen for zero install and Mac portability. The pipeline now runs on the GPU desktop anyway (§8.1), so the local engine wins. The alignment step stays a single boundary (`render/align.ts`, `audio → word-timestamps`). The OpenAI API stays as a fallback engine (`ALIGN_ENGINE=openai`) for runs on a machine without the GPU. Whisper writes numbers as digits ("9 to 5"), so beat matching never anchors a beat on a number word. `npm run align` also passes the script's opening narration to Whisper as a spelling hint for names.
 
 **Engine environment:** a Python 3.12 venv at `<repo>/.whisper-env` (gitignored), built from `tools/whisper/requirements.lock.txt` by `tools/whisper/setup.ps1`. Do not run it while ComfyUI is generating: Flux uses almost all of the VRAM.
 
@@ -183,7 +183,7 @@ what-was-that-about/
       notes/factcheck.md  # `npm run short` enforces the same gate
       audio/
       out/
-  render/         # Remotion project + alignment boundary (OpenAI API today; local faster-whisper after V1)
+  render/         # Remotion project + alignment boundary (local faster-whisper; OpenAI API fallback)
   scripts/        # CLI entry points (new-episode, align, assemble, short; generate-scenes planned in V2)
   shared/         # character files, tone presets, caption styles, music/SFX, brand tokens
   tools/          # setup recipes for the local GPU tools (ComfyUI, Whisper) — see §8.6
@@ -200,6 +200,7 @@ The repo holds the **recipe** for each tool. The large installs and model files 
 - **ComfyUI rule:** use only the portable build. A manual venv install failed on PyTorch version conflicts.
 - **Remote use:** `C:\ComfyUI\run_nvidia_gpu_lan.bat` listens on `0.0.0.0:8188`. ComfyUI has no login: open TCP 8188 only on a trusted home network (Windows network profile **Private**). The generator (V2) will read the server address from `COMFY_URL`; `poseidon_refs.py` already does.
 - **Generated images** are not committed. The prompt, seed and pinned models reproduce them.
+- **Character reference images and LoRA files** are not committed either. They stay on the GPU desktop; their prompts and seeds are in `tools/comfyui/prompts/`. Character files (`shared/characters/`) hold text only.
 
 ## 9. Captions, music & SFX
 
@@ -257,7 +258,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - **Pipeline:** free to use. ComfyUI, faster-whisper and Remotion are open source (Remotion is free at our solo scale); the Flux.1 Dev weights use a non-commercial license (see §16); assets are royalty-free.
 - **Hardware:** the existing Windows desktop (RTX 3080 10 GB) — no new purchase.
 - **One-time:** a decent USB mic (~$50–100) for clean narration. *(Open item: confirm mic situation.)*
-- **Ongoing:** **~$0** once slices V1/V2 ship — image generation and alignment run locally (electricity only). Until V1, alignment uses the OpenAI Whisper API (≈$0.06 per episode); after V1 it is only a fallback. Optional later: paid music library, thumbnail tooling.
+- **Ongoing:** **~$0** — alignment runs locally, and image generation will after slice V2 (electricity only). The OpenAI Whisper API (≈$0.06 per episode) is only a fallback. Optional later: paid music library, thumbnail tooling.
 
 ## 16. Legal / copyright / monetization
 - **Book content:** summary + analysis = transformative / fair use. We synthesize, never reproduce the text.

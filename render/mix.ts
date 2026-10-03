@@ -42,7 +42,7 @@ export function sfxFile(name: string): string | undefined {
 
 /**
  * Build SFX events from a beat list.
- * @param resolve - gets the tag name as written in the script; returns the src URL, or null to skip.
+ * @param resolve - gets the tag name as written in the script; returns the src (a staticFile() name), or null to skip.
  */
 export function buildSfxEvents(
   beats: BeatEntry[],

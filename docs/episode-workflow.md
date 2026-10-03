@@ -170,9 +170,11 @@ npm run align <slug>
 
 Reads `audio/narration.wav`, runs Whisper and writes `out/alignment.json` (word timestamps).
 
-- **Now:** calls the OpenAI Whisper API. Requires the `OPENAI_API_KEY` environment variable.
-- **After slice V1:** runs local faster-whisper from `.whisper-env/` on the GPU. No key, no
-  cost. Set up once with `tools\whisper\setup.ps1`. The OpenAI API stays as a fallback.
+- **Default (`ALIGN_ENGINE=local`):** local faster-whisper from `.whisper-env/` on the GPU. No key,
+  no cost. Set up once with `tools\whisper\setup.ps1`. The first run downloads the model (~1.6 GB).
+- If `script.yml` exists, its opening narration goes to Whisper as a spelling hint for names.
+- **Fallback (`ALIGN_ENGINE=openai`):** the OpenAI Whisper API. Requires `OPENAI_API_KEY`. Use it on a
+  machine without the GPU env, such as the Mac.
 - Do not run it while ComfyUI generates images — both need the 10 GB of VRAM.
 
 ### Assembly (rough cut)
