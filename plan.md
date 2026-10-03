@@ -49,7 +49,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #10 | Music bed + SFX (tone-tag-driven) | AFK | #8 | 🟩 merged (PR #23) |
 | #11 | Shorts auto-cut (9:16) | AFK | #4, #8, #9 | 🟩 merged (PR #24) |
 | #12 | Per-episode content workflow scaffolding | AFK | #5 | 🟩 merged (PR #25) |
-| V0 | Local GPU tools: ComfyUI + Flux GGUF, faster-whisper env, `tools/` recipes, Poseidon look | **HITL** | — | 🟨 done locally · commit pending |
+| V0 | Local GPU tools: ComfyUI + Flux GGUF, faster-whisper env, `tools/` recipes, Poseidon look | **HITL** | — | 🟩 merged (PR: V0 local tools + docs) |
 | V1 | Local Whisper in `align` (faster-whisper engine; OpenAI API as fallback) | AFK | V0 | ⬜ |
 | V2 | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | ⬜ |
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 (writing can start now) | ⬜ |
@@ -58,6 +58,9 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | V4 | ControlNet pose control (+ IP-Adapter) for precise poses | AFK | V2 | ⬜ later |
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
 | — | Shorts Pipeline B: standalone `shorts/<id>/` (PRD §7.7) | AFK | — | ⬜ later |
+| — | `HOLD` tag: extend dwell in assembly (parsed, not used yet) | AFK | — | ⬜ later |
+
+Before V2/V3: `.gitignore` ignores every `*.png`. Decide whether character reference images in `shared/characters/` get committed (add an exception) or stay local.
 
 `V*` = visual/audio-upgrade slices (2026-09 / 10). They get GitHub issue numbers when opened.
 
@@ -88,13 +91,13 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 ## Locked design decisions (2026-06-15 design pass)
 Captured in PRD; this is the index — see referenced PRD sections for the rationale.
 
-1. ~~**Whisper engine — OpenAI Whisper API**~~ → **superseded by #17** (local faster-whisper).
+1. ~~**Whisper engine — OpenAI Whisper API**~~ → **superseded by decision 17** (local faster-whisper).
 2. **Tone tags — Light / Balanced / Heavy** (§6.1). `Balanced-Heavy` dropped (removed from the code 2026-10-03).
 3. **Captions — two-tier**: line-pop subtitles (always-on) + text-hero emphasis scenes (§9.1). Per-word pop rejected.
 4. **§6.0 Visual storytelling principle**: images carry the message — unbounded visual vocabulary, not locked to character scenes.
 5. **Casting doctrine** (§6.0): cast existing first, custom last.
 6. **Audio contract** (§8.3): WAV mono 44.1 kHz 16-bit, `-6..-3` dBFS peak, normalize to -14 LUFS.
-7. **Shorts — two pipelines** (§7.7): A auto-suggested per episode under `episodes/<slug>/shorts/`; B standalone at repo root `shorts/<id>/`.
+7. **Shorts — two pipelines** (§7.7): A auto-suggested per episode under `episodes/<slug>/shorts/` (today `npm run short` writes to `out/`); B standalone at repo root `shorts/<id>/`.
 8. **Channel name** — *deferred* (§18); "What Was That About" working title fine for now.
 9. **Episode structure — 5-section tag-based template** (§6.4): cold-open, spoiler-warn-and-setup, recap, analysis, verdict.
 10. **Pilot — Ubik** (§20), tone tag **Heavy**.
@@ -106,7 +109,7 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 ### Visual + audio upgrade (2026-09-26 / 2026-10-03)
 15. **Visuals — AI stills, not SVG stick figures** (§8.1). Stills only: no animation, no lip sync. Generated **locally** (no cloud API) with ComfyUI portable + Flux.1 Dev GGUF Q5_K_S. Text-hero beats stay code-rendered.
 16. **Poseidon look — locked "for now"** (§8.1): stocky, barrel-chested, round belly; white beard and wild hair; pink nose; teal toga over one shoulder; all-gold trident. Refine during the pilot.
-17. **Whisper engine — local faster-whisper** (§8.3), OpenAI API as fallback. Supersedes #1.
+17. **Whisper engine — local faster-whisper** (§8.3), OpenAI API as fallback. Supersedes decision 1.
 18. **Reproducibility — recipes in `tools/`** (§8.6): pinned versions, model checksums, setup scripts. Installs and models stay out of git; generated images are not committed.
 
 ## North-star constraints (don't violate)
@@ -121,10 +124,9 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 **Phase 0 (pipeline skeleton) complete.** **Phase 0.5 (local upgrade) in progress.**
 
 Next, in this order:
-1. **Commit V0** — `tools/`, doc updates, config changes (branch + PR).
-2. **V1 — local Whisper in `align`.** Write `plans/<issue#>-local-whisper.md`, get approval, build.
-3. **V2 — AI scene generation.** Write `plans/<issue#>-ai-scene-generation.md`, get approval, build.
-4. **#13 — Ubik pilot**, in parallel with V1/V2 for the writing steps:
+1. **V1 — local Whisper in `align`.** Write `plans/<issue#>-local-whisper.md`, get approval, build.
+2. **V2 — AI scene generation.** Write `plans/<issue#>-ai-scene-generation.md`, get approval, build.
+3. **#13 — Ubik pilot**, in parallel with V1/V2 for the writing steps:
    1. `npm run new-episode ubik`.
    2. Fill in `episodes/ubik/seed.md` (angle + tone: Heavy, locked decision #10).
    3. Claude researches → `notes/research.md`; drafts `script.yml` with an image prompt per beat.

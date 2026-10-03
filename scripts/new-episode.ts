@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 function usage(): never {
   console.error("usage: tsx scripts/new-episode.ts <book-slug>");
-  console.error("  book-slug: kebab-case identifier, e.g. ubik-philip-k-dick");
+  console.error("  book-slug: kebab-case identifier, slug-only, e.g. ubik");
   process.exit(2);
 }
 

@@ -33,7 +33,7 @@ VARIANTS = 3
 def post(wf):
     req = urllib.request.Request(HOST + "/prompt", data=json.dumps({"prompt": wf}).encode(),
                                  headers={"Content-Type": "application/json"})
-    return json.load(urllib.request.urlopen(req))["prompt_id"]
+    return json.load(urllib.request.urlopen(req, timeout=30))["prompt_id"]
 
 ids = []
 for i, (name, pose) in [(i, x) for i, x in enumerate(SHOTS) for _ in range(VARIANTS)]:
@@ -44,11 +44,17 @@ for i, (name, pose) in [(i, x) for i, x in enumerate(SHOTS) for _ in range(VARIA
     ids.append((name, post(wf)))
 print("queued", len(ids), flush=True)
 
+# A job that never reaches history (ComfyUI restarted, queue cleared) must not hang the script.
+PER_IMAGE_LIMIT_S = 300
 t0 = time.time()
-for name, pid in ids:
+for n, (name, pid) in enumerate(ids, start=1):
+    deadline = t0 + n * PER_IMAGE_LIMIT_S
     while True:
-        h = json.load(urllib.request.urlopen(f"{HOST}/history/{pid}"))
-        if pid in h and h[pid]["status"].get("completed") is not None or (pid in h and h[pid]["status"]["status_str"] == "error"):
-            print(name, h[pid]["status"]["status_str"], f"{time.time()-t0:.0f}s", flush=True)
+        h = json.load(urllib.request.urlopen(f"{HOST}/history/{pid}", timeout=30))
+        status = h.get(pid, {}).get("status", {})
+        if status.get("completed") is not None:
+            print(name, status.get("status_str"), f"{time.time()-t0:.0f}s", flush=True)
             break
+        if time.time() > deadline:
+            raise SystemExit(f"{name}: no result after {time.time()-t0:.0f}s — is ComfyUI still running?")
         time.sleep(3)

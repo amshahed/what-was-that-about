@@ -80,7 +80,7 @@ The parser does not read `[SECTION]` tags yet. Mark each section with a YAML com
 ### Tags
 
 ```yaml
-tags: [HOLD]                   # linger on this shot
+tags: [HOLD]                   # linger on this shot (parsed; assembly does not use it yet)
 tags: [ZOOM]                   # Ken Burns punch-in over the beat
 tags: ["SFX:record scratch"]   # comedic sting at the beat's start
 tags: [HOLD, ZOOM]             # combine freely
@@ -108,7 +108,8 @@ Each beat has one picture. Pick one of two kinds:
 - **Code-kit scene** — for text-hero beats (a giant word, number or `?`) and diagrams. Image
   models draw text badly, so text stays code-rendered. See [`kit/README.md`](../kit/README.md).
 
-Until V2 ships, every beat uses code-kit `layers` (the parser rejects `image:`).
+Until V2 ships, every beat needs code-kit `layers`. The parser ignores `image`, `cast` and `seed`
+without a warning, so they do nothing yet.
 
 ### Keeping it funny
 
@@ -141,7 +142,8 @@ npm run generate-scenes <slug>
 
 Sends each AI-still beat to the local ComfyUI (Flux) and writes one PNG per beat to
 `scenes/`. About 45–60 s per image. A re-run regenerates only the beats whose prompt, cast or
-seed changed. From the Mac, set `COMFY_URL=http://192.168.0.102:8188`.
+seed changed. From the Mac, set `COMFY_URL=http://<desktop LAN IP>:8188` (now `192.168.0.102`; reserve it in
+the router's DHCP settings).
 
 Review the stills. For a bad image, change the prompt or the seed, then run the command again.
 
@@ -206,7 +208,8 @@ npm run short <slug> <start-beat> <end-beat>
 Beat indices are 0-based and inclusive. Aim for 30–60 s. Writes `out/short-<start>-<end>.mp4` (9:16).
 
 **Pipeline B (standalone, `shorts/<id>/` at repo root):** not built yet. `npm run short` accepts
-a directory path, so a standalone Short with the same file layout can render the same way.
+a directory path, so a standalone Short with the same file layout (including
+`notes/factcheck.md`, because the gate applies) can render the same way.
 
 ---
 
@@ -229,8 +232,8 @@ episodes/<slug>/
     <beat>.png         — generated stills (gitignored; reproducible from prompt + seed)
   audio/
     narration.wav      — recorded narration (gitignored)
-  out/
+  out/                 — all gitignored
     alignment.json     — Whisper word timestamps
-    roughcut.mp4       — 16:9 full episode (gitignored)
-    short-*.mp4        — 9:16 Shorts (gitignored)
+    roughcut.mp4       — 16:9 full episode
+    short-*.mp4        — 9:16 Shorts
 ```

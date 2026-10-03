@@ -104,9 +104,9 @@ Stages flow **seed → research → script → visuals → audio → assembly �
 | 2 | **Research & synthesis** | C | Claude combines own knowledge + a web research pass (Wikipedia, study guides, essays, Reddit, YouTube) to map the "landscape take" and spot angles others missed. Synthesizes — never copies. |
 | 3 | **Script draft** | C | Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. Each beat gets an **image prompt** and its cast list. |
 | 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file contains `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
-| 4 | **Visual generation** | C + U | `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat. Text-hero beats render from the code kit. User reviews the stills; Claude re-rolls the ones that miss (new seed or new prompt). See §8.1. |
+| 4 | **Visual generation** | C + U | *(Planned: slice V2. Today every beat renders from the code kit.)* `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat. Text-hero beats render from the code kit. User reviews the stills; Claude re-rolls the ones that miss (new seed or new prompt). See §8.1. |
 | 5 | **Audio recording** | U | User records himself reading the approved script. **Audio contract:** WAV, mono, 44.1 kHz, 16-bit, peak in `-6` to `-3` dBFS, quiet room (see §8.3). |
-| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX, audio normalized to -14 LUFS). User does a **light polish** pass only on comedic-timing beats. |
+| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop after slice V1; the OpenAI Whisper API today — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX, audio normalized to -14 LUFS). User does a **light polish** pass only on comedic-timing beats. |
 | 7 | **Shorts** | C + U | **Two pipelines** — see §7.7. **(A) Auto-suggested:** post-long-form, Claude proposes 1–3 candidate cuts (intro hook, mid-video bit, etc.) from the cold-open and tagged beats; user picks. **(B) Custom:** standalone Shorts authored at repo root `shorts/<id>/` — can slice from anywhere across episodes, with their own music/voice; lighter-weight pipeline. |
 | 8 | **Publish** | U | Title, thumbnail, description/tags, upload, schedule. |
 
@@ -136,7 +136,7 @@ The visual + assembly layers are **real code living in this repo** (GitHub: `ams
 
 ### 8.2 Script-as-Edit-Decision-List
 The script (`episodes/<slug>/script.yml`) is the single source of truth for the edit. Each beat carries: narration text, the image (an AI image prompt + cast list, or a code-kit composition for text-hero beats), and optional tags:
-- `[HOLD]` — linger (e.g. on a punchline)
+- `[HOLD]` — linger (e.g. on a punchline). *Parsed but not yet used by assembly (planned).*
 - `[ZOOM]` — Ken Burns punch-in
 - `[SFX: record scratch]` — sound sting
 This lets assembly be comedic-timing-aware *automatically*, without manual editing. In `script.yml` these are list entries: `tags: [HOLD, ZOOM, "SFX:record scratch"]`. Full schema: `kit/SCRIPT.md`.
@@ -174,16 +174,17 @@ what-was-that-about/
         factcheck.md  # required gate file — must contain `Status: ✅ approved` before assembly runs
       scenes/         # generated stills, one PNG per beat (gitignored; reproducible from prompt + seed)
       audio/          # WAV mono 44.1k/16-bit, -6..-3 dBFS peak (see §8.3)
-      out/            # alignment, rough cut, final cut
+      out/            # alignment, rough cut, final cut, Shorts (all gitignored)
       shorts/         # Pipeline A — auto-suggested Shorts derived from this episode
   shorts/         # Pipeline B — standalone custom Shorts authored at repo root
     <id>/
       seed.md
       script.yml
+      notes/factcheck.md  # `npm run short` enforces the same gate
       audio/
       out/
   render/         # Remotion project + alignment boundary (local faster-whisper)
-  scripts/        # CLI entry points (new-episode, generate-scenes, align, assemble, short)
+  scripts/        # CLI entry points (new-episode, align, assemble, short; generate-scenes planned in V2)
   shared/         # character files, tone presets, caption styles, music/SFX, brand tokens
   tools/          # setup recipes for the local GPU tools (ComfyUI, Whisper) — see §8.6
 ```
@@ -193,11 +194,11 @@ The repo holds the **recipe** for each tool. The large installs and model files 
 
 | Tool | Install location | Recipe |
 |------|------------------|--------|
-| ComfyUI portable + Flux GGUF | `C:\ComfyUI` (SSD — the 8 GB model loads on every cold start) | `tools/comfyui/setup.ps1`: pinned ComfyUI version, custom-node commits (`requirements.txt`), model URLs + SHA-256 (`models.json`) |
+| ComfyUI portable + Flux GGUF | `C:\ComfyUI` (SSD — the 8 GB model loads on every cold start) | pinned ComfyUI version and custom-node commits (`tools/comfyui/setup.ps1`), node pip packages (`requirements.txt`), model URLs + SHA-256 (`models.json`) |
 | faster-whisper | `<repo>\.whisper-env` (gitignored) | `tools/whisper/setup.ps1` + `requirements.lock.txt` |
 
 - **ComfyUI rule:** use only the portable build. A manual venv install failed on PyTorch version conflicts.
-- **Remote use:** `C:\ComfyUI\run_nvidia_gpu_lan.bat` listens on `0.0.0.0:8188`. Open TCP 8188 in Windows Firewall for the local subnet. The generator reads the server address from `COMFY_URL`.
+- **Remote use:** `C:\ComfyUI\run_nvidia_gpu_lan.bat` listens on `0.0.0.0:8188`. ComfyUI has no login: open TCP 8188 only on a trusted home network (Windows network profile **Private**). The generator (V2) will read the server address from `COMFY_URL`; `poseidon_refs.py` already does.
 - **Generated images** are not committed. The prompt, seed and pinned models reproduce them.
 
 ## 9. Captions, music & SFX
@@ -213,7 +214,7 @@ The two tiers complement: subtitles handle the unbroken accessibility/retention 
 
 ### 9.2 Music & SFX (defaults — adjustable)
 
-- **Music:** royalty-free bed, mood-matched to the **tone tag** (Light / Balanced / Heavy each get a small pre-curated palette in `shared/music/`).
+- **Music:** royalty-free bed, mood-matched to the **tone tag** (one loop-safe bed per tag — Light / Balanced / Heavy — in `shared/music/`; see `shared/assets.md`).
 - **SFX:** small comedic library (boings, record scratches, dings) triggered by `[SFX]` tags.
 - **Palette:** color/brand palette is **unified across the channel** (not tone-driven, not per-book). For AI stills, the fixed style prompt and the character files hold the palette. Brand recognition wins; the tone tag moves the *music* dial, not the *visual palette* dial.
 - **Intro / outro bumper:** **no default bumper** on the pilot. A signature bumper is a creative-design task that is intentionally deferred (see §18); shipping the pilot does not depend on it. When designed, it will live in `shared/bumpers/` and slot in via the renderer.
@@ -253,7 +254,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 | **3 — Growth** | Long term | Subscribers / views. (Views are the ultimate point — just not the *early* yardstick.) |
 
 ## 15. Costs & tools
-- **Pipeline:** free / open-source (ComfyUI, Flux.1 Dev weights, faster-whisper, Remotion, royalty-free assets).
+- **Pipeline:** free to use. ComfyUI, faster-whisper and Remotion are open source (Remotion is free at our solo scale); the Flux.1 Dev weights use a non-commercial license (see §16); assets are royalty-free.
 - **Hardware:** the existing Windows desktop (RTX 3080 10 GB) — no new purchase.
 - **One-time:** a decent USB mic (~$50–100) for clean narration. *(Open item: confirm mic situation.)*
 - **Ongoing:** **~$0** — image generation and alignment run locally (electricity only). The OpenAI Whisper API (≈$0.06 per episode) is only a fallback. Optional later: paid music library, thumbnail tooling.
@@ -273,7 +274,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 | **Pipeline too high-effort** → user quits | Effort-as-gate (§13); automate aggressively; measure ep#1 vs ep#2 effort. |
 | **Character drift between shots** | Locked character files; approved reference set; then Poseidon LoRA → IP-Adapter → ControlNet (§8.1). |
 | **AI errors (hands, poses, extra props, stray signatures)** | User reviews stills; re-roll seed or prompt; ControlNet for precise poses. |
-| **Flux.1 Dev license blocks monetized use** | Check the output terms before monetization (§16); fallback: a commercially licensed model (e.g. Flux.1 Schnell, Apache 2.0) with the same workflow. |
+| **Flux.1 Dev license blocks monetized use** | Check the output terms before monetization (§16); fallback: a commercially licensed model (e.g. Flux.1 Schnell, Apache 2.0) with the same nodes — different model file and sampler settings (~4 steps, no guidance). |
 | **Single GPU machine** | Recipes in `tools/` rebuild it on any NVIDIA PC; OpenAI Whisper API fallback for alignment. |
 | **GPU contention (10 GB VRAM)** | Run image generation and alignment one after the other, never together. |
 | **Comedic timing flat from auto-cut** | EDL tags + light manual polish pass. |

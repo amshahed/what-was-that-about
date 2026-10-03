@@ -1,5 +1,5 @@
 // The canonical episode script shape. The parser (script-parser.ts) emits this;
-// downstream slices (#6 stills batch, #7 assembly, #9 SFX/music) consume it.
+// downstream slices (#6 stills batch, #8 assembly, #10 SFX/music) consume it.
 
 import type { SceneSpec } from "./scene";
 
@@ -21,7 +21,7 @@ export interface Beat {
 export interface Script {
   /** Stable id for the episode (used for output paths, etc.). */
   id: string;
-  /** Tone tag — sets joke density, runtime band, music bed (Slice 9). */
+  /** Tone tag — sets joke density, runtime band, music bed (slice #10). */
   tone: Tone;
   /** Ordered beat list. */
   beats: Beat[];

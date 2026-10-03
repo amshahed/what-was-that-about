@@ -21,8 +21,10 @@ C:\ComfyUI\run_nvidia_gpu_lan.bat
 - `requirements.txt`: the pinned Python packages that the custom nodes add to ComfyUI's embedded Python. ComfyUI has no separate env.
 - `workflows/flux-gguf.api.json`: the base text-to-image workflow, in API format.
 - `prompts/poseidon_refs.py`: makes the Poseidon reference set (stocky build, teal toga, gold trident).
-- Remote use: the LAN launcher listens on `0.0.0.0:8188`. Open TCP 8188 in Windows Firewall (admin):
-  `New-NetFirewallRule -DisplayName "ComfyUI 8188 (LAN)" -Direction Inbound -Protocol TCP -LocalPort 8188 -RemoteAddress LocalSubnet -Action Allow -Profile Any`
+- Remote use: the LAN launcher listens on `0.0.0.0:8188`. ComfyUI has no login, so open the port only on a
+  trusted home network. Set that Wi-Fi to **Private** (Settings → Network → Wi-Fi), then run as admin:
+  `New-NetFirewallRule -DisplayName "ComfyUI 8188 (LAN)" -Direction Inbound -Protocol TCP -LocalPort 8188 -RemoteAddress LocalSubnet -Action Allow -Profile Private`
+  To allow only the Mac, use `-RemoteAddress <Mac IP>` instead of `LocalSubnet`.
 - Use only the portable build. A manual venv install of ComfyUI failed on PyTorch version conflicts.
 
 ## Whisper

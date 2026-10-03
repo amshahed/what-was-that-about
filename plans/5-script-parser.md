@@ -1,5 +1,7 @@
 # Plan — Issue #5: Script / Edit-Decision-List format + parser
 
+> *Historical plan. Later change: the `balanced-heavy` tone was dropped (plan.md decision 2).*
+
 > Parent PRD: #1. Branch: `slice/5-script-parser`. Type: **AFK** (pure technical, no creative input).
 
 ## Goal
