@@ -38,7 +38,10 @@ export function resolveEngine(raw: string | undefined = process.env.ALIGN_ENGINE
   const value = (raw ?? "").trim().toLowerCase();
   if (value === "") return "local";
   if ((ENGINES as readonly string[]).includes(value)) return value as AlignEngine;
-  throw new Error(`ALIGN_ENGINE must be one of ${ENGINES.join(", ")} — got "${raw}".`);
+  throw new Error(
+    `ALIGN_ENGINE must be one of ${ENGINES.join(", ")} — got "${raw}". ` +
+      "To use the default (local), in PowerShell: Remove-Item Env:ALIGN_ENGINE",
+  );
 }
 
 export function parseAlignmentResponse(raw: TranscriptionVerbose): AlignmentResult {
@@ -74,6 +77,8 @@ export function parseLocalAlignment(stdout: string): AlignmentResult {
 
 export interface ProcessResult {
   code: number | null;
+  /** Set when the process was killed by a signal (code is then null). */
+  signal?: string | null;
   stdout: string;
   stderr: string;
 }
@@ -86,13 +91,16 @@ export const runProcess: ProcessRunner = (exe, args) =>
     const child = spawn(exe, args, { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (c: Buffer) => (stdout += c.toString()));
-    child.stderr.on("data", (c: Buffer) => {
-      stderr += c.toString();
+    // setEncoding keeps multi-byte characters intact across chunk boundaries.
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (c: string) => (stdout += c));
+    child.stderr.on("data", (c: string) => {
+      stderr += c;
       process.stderr.write(c);
     });
     child.on("error", reject);
-    child.on("close", (code) => resolve({ code, stdout, stderr }));
+    child.on("close", (code, signal) => resolve({ code, signal, stdout, stderr }));
   });
 
 export async function alignLocal(
@@ -101,25 +109,35 @@ export async function alignLocal(
   run: ProcessRunner = runProcess,
   exists: (p: string) => boolean = existsSync,
 ): Promise<AlignmentResult> {
-  if (!exists(LOCAL_PYTHON) || !exists(LOCAL_SCRIPT)) {
+  if (!exists(LOCAL_SCRIPT)) {
     throw new Error(
-      "Local Whisper is not set up. Run `powershell -ExecutionPolicy Bypass -File tools\\whisper\\setup.ps1`, " +
-        "or set ALIGN_ENGINE=openai.",
+      `${path.resolve(LOCAL_SCRIPT)} not found. Run \`npm run align\` from the repo root.`,
+    );
+  }
+  if (!exists(LOCAL_PYTHON)) {
+    throw new Error(
+      `Local Whisper is not set up (${path.resolve(LOCAL_PYTHON)} not found). ` +
+        'Run `powershell -ExecutionPolicy Bypass -File tools\\whisper\\setup.ps1`, or use the OpenAI API (PowerShell: $env:ALIGN_ENGINE = "openai").',
     );
   }
   if (!exists(audioPath)) throw new Error(`audio file not found: ${audioPath}`);
   const args = ["-W", "ignore", LOCAL_SCRIPT, audioPath];
   if (prompt) args.push("--prompt", prompt);
 
-  const { code, stdout, stderr } = await run(LOCAL_PYTHON, args);
+  const { code, signal, stdout, stderr } = await run(LOCAL_PYTHON, args);
   if (code === EXIT_OOM) {
     throw new Error(
       "GPU out of memory. Stop ComfyUI (or any other GPU job) and run `npm run align` again.",
     );
   }
   if (code !== 0) {
-    const tail = stderr.trim().split("\n").slice(-5).join("\n");
-    throw new Error(`local Whisper failed (exit ${code}):\n${tail}`);
+    // Native loaders (CUDA, cuDNN) can print to stdout before they abort, so show both streams.
+    const tail = (text: string) => text.trim().split("\n").slice(-5).join("\n");
+    const how = signal ? `killed by ${signal}` : `exit ${code}`;
+    const out = tail(stdout);
+    throw new Error(
+      `local Whisper failed (${how}):\n${tail(stderr)}${out ? `\n[stdout]\n${out}` : ""}`,
+    );
   }
   return parseLocalAlignment(stdout);
 }

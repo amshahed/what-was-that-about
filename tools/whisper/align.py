@@ -42,10 +42,18 @@ def main() -> int:
     from faster_whisper import WhisperModel
 
     try:
-        print(f"loading {MODEL} ...", file=sys.stderr, flush=True)
+        first_run = not os.path.isdir(MODELS_DIR) or not os.listdir(MODELS_DIR)
+        note = " (first run: downloading ~1.6 GB, this takes a few minutes)" if first_run else ""
+        print(f"loading {MODEL}{note} ...", file=sys.stderr, flush=True)
         model = WhisperModel(MODEL, device="cuda", compute_type="float16", download_root=MODELS_DIR)
+        # vad_filter drops silence before decoding, so silent stretches do not produce made-up
+        # words ("Thank you."). Timestamps stay relative to the original audio.
         segments, info = model.transcribe(
-            args.audio, language="en", word_timestamps=True, initial_prompt=args.prompt
+            args.audio,
+            language="en",
+            word_timestamps=True,
+            initial_prompt=args.prompt,
+            vad_filter=True,
         )
         words = [
             {"word": w.word, "start": round(w.start, 3), "end": round(w.end, 3)}
@@ -53,12 +61,13 @@ def main() -> int:
             for w in (seg.words or [])
         ]
     except RuntimeError as err:
-        if "out of memory" in str(err).lower():
+        msg = str(err).lower()
+        if "out of memory" in msg or "alloc_failed" in msg:
             print("GPU out of memory. Stop ComfyUI (or any other GPU job) and run again.", file=sys.stderr)
             return EXIT_OOM
         raise
 
-    json.dump({"words": words, "duration": round(info.duration, 3)}, sys.stdout)
+    json.dump({"words": words, "duration": round(info.duration, 3)}, sys.stdout, ensure_ascii=True)
     sys.stdout.write("\n")
     return 0
 

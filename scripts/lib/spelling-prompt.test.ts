@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { spellingPrompt } from "./spelling-prompt";
+import { lowCoverageWarning, spellingPrompt } from "./spelling-prompt";
 
 const SCRIPT = `id: x
 tone: heavy
@@ -21,5 +21,16 @@ describe("spellingPrompt", () => {
 
   it("returns undefined for a script that does not parse", () => {
     expect(spellingPrompt("not: [valid")).toBeUndefined();
+  });
+});
+
+describe("lowCoverageWarning", () => {
+  it("is silent when the transcript covers most of the script", () => {
+    expect(lowCoverageWarning(90, 100)).toBeUndefined();
+    expect(lowCoverageWarning(5, 0)).toBeUndefined();
+  });
+
+  it("warns when the transcript has far fewer words", () => {
+    expect(lowCoverageWarning(2, 100)).toMatch(/found 2 words, but the script has 100/);
   });
 });

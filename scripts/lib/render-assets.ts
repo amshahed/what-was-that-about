@@ -2,7 +2,8 @@ import path from "node:path";
 import { copyFileSync, mkdirSync, rmSync } from "node:fs";
 
 // Remotion cannot load file:// URLs during a render. Media must come from the bundle's public
-// folder and be referenced with staticFile(). This stages the files for one render.
+// folder and be referenced with staticFile(). This stages the files for one render; give each
+// render its own folder so two renders of one episode cannot delete each other's files.
 export class RenderAssets {
   readonly dir: string;
 
@@ -18,5 +19,10 @@ export class RenderAssets {
     mkdirSync(path.dirname(dest), { recursive: true });
     copyFileSync(sourcePath, dest);
     return name;
+  }
+
+  /** Deletes the staged copies (the narration WAV can be ~80 MB). */
+  dispose(): void {
+    rmSync(this.dir, { recursive: true, force: true });
   }
 }

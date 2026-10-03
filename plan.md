@@ -43,14 +43,14 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #4 | Component kit + composition API | AFK | #2 | 🟩 merged (PR #16) |
 | #5 | Script / Edit-Decision-List format + parser | AFK | #4 | 🟩 merged (PR #17) |
 | #6 | Script → stills batch render | AFK | #4, #5 | 🟩 merged (PR #18) |
-| #7 | Whisper forced alignment (OpenAI Whisper API; engine now changing to local — see V1) | AFK | #5 | 🟩 merged (PR #20) |
+| #7 | Whisper forced alignment (OpenAI Whisper API; replaced by local faster-whisper in V1) | AFK | #5 | 🟩 merged (PR #20) |
 | #8 | Assembly v1: synced rough-cut with motion | AFK | #6, #7 | 🟩 merged (PR #21) |
 | #9 | Burned-in animated captions | AFK | #8 | 🟩 merged (PR #22) |
 | #10 | Music bed + SFX (tone-tag-driven) | AFK | #8 | 🟩 merged (PR #23) |
 | #11 | Shorts auto-cut (9:16) | AFK | #4, #8, #9 | 🟩 merged (PR #24) |
 | #12 | Per-episode content workflow scaffolding | AFK | #5 | 🟩 merged (PR #25) |
 | V0 | Local GPU tools: ComfyUI + Flux GGUF, faster-whisper env, `tools/` recipes, Poseidon look | **HITL** | — | 🟩 merged (PR: V0 local tools + docs) |
-| V1 (#27) | Local Whisper in `align` (faster-whisper engine; OpenAI API as fallback) | AFK | V0 | 🟩 merged |
+| V1 (#27) | Local Whisper in `align` (faster-whisper engine; OpenAI API as fallback) | AFK | V0 | 🟩 merged (PR #28) |
 | V2 | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | ⬜ |
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 (writing can start now) | ⬜ |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ Poseidon look locked "for now" |

@@ -6,6 +6,7 @@ import {
   resolveEngine,
   alignAudio,
   alignLocal,
+  runProcess,
   LOCAL_PYTHON,
   LOCAL_SCRIPT,
   type ProcessRunner,
@@ -150,8 +151,37 @@ describe("alignLocal", () => {
   });
 
   it("explains how to set up the env when it is missing", async () => {
-    await expect(alignLocal("a.wav", undefined, ok, () => false)).rejects.toThrow(
-      "Local Whisper is not set up",
+    const exists = (p: string) => p !== LOCAL_PYTHON;
+    await expect(alignLocal("a.wav", undefined, ok, exists)).rejects.toThrow(
+      /Local Whisper is not set up \(.*python\.exe not found\)/,
+    );
+  });
+
+  it("says to run from the repo root when align.py is not found", async () => {
+    const exists = (p: string) => p !== LOCAL_SCRIPT;
+    await expect(alignLocal("a.wav", undefined, ok, exists)).rejects.toThrow("from the repo root");
+  });
+
+  it("names the signal when the process is killed", async () => {
+    const run: ProcessRunner = async () => ({
+      code: null,
+      signal: "SIGKILL",
+      stdout: "",
+      stderr: "",
+    });
+    await expect(alignLocal("a.wav", undefined, run, allExist)).rejects.toThrow(
+      "killed by SIGKILL",
+    );
+  });
+
+  it("includes stdout when a native loader prints there before failing", async () => {
+    const run: ProcessRunner = async () => ({
+      code: 1,
+      stdout: "Could not locate cudnn_ops64_9.dll",
+      stderr: "",
+    });
+    await expect(alignLocal("a.wav", undefined, run, allExist)).rejects.toThrow(
+      /\[stdout\]\nCould not locate cudnn_ops64_9\.dll/,
     );
   });
 
@@ -176,5 +206,19 @@ describe("alignLocal", () => {
     await expect(alignLocal("a.wav", undefined, run, allExist)).rejects.toThrow(
       /local Whisper failed \(exit 1\):[\s\S]*ValueError: bad wav/,
     );
+  });
+});
+
+describe("runProcess", () => {
+  it("collects stdout and the exit code", async () => {
+    const out = await runProcess(process.execPath, [
+      "-e",
+      "process.stdout.write('ok'); process.exit(2)",
+    ]);
+    expect(out).toMatchObject({ code: 2, stdout: "ok" });
+  });
+
+  it("rejects when the executable does not exist", async () => {
+    await expect(runProcess("definitely-not-an-exe-wwta", [])).rejects.toThrow(/ENOENT/);
   });
 });

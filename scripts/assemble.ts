@@ -58,61 +58,75 @@ async function main() {
   const musicFile = TONE_MUSIC[script.tone];
   const musicPath = path.resolve("shared", "music", musicFile);
   // Media for the render is staged into a public folder (out/ is gitignored).
-  const assets = new RenderAssets(path.join(episodeDir, "out", ".render-public"));
+  const assets = new RenderAssets(path.join(episodeDir, "out", ".render-public-roughcut"));
   const musicSrc = existsSync(musicPath) ? assets.add(musicPath, `music/${musicFile}`) : "";
   if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);
 
   const sfxDir = path.resolve("shared", "sfx");
   const sfxEvents = buildSfxEvents(beats, (name) => {
     const file = sfxFile(name);
-    if (!file) { console.warn(`unknown SFX "${name}" (skipping)`); return null; }
+    if (!file) {
+      console.warn(`unknown SFX "${name}" (skipping)`);
+      return null;
+    }
     const p = path.join(sfxDir, file);
-    if (!existsSync(p)) { console.warn(`SFX file not found: ${p} (skipping)`); return null; }
+    if (!existsSync(p)) {
+      console.warn(`SFX file not found: ${p} (skipping)`);
+      return null;
+    }
     return assets.add(p, `sfx/${file}`);
   });
 
   // Stage every file before bundle(): it copies the public folder at bundle time.
   const audioSrc = assets.add(audioPath, "narration.wav");
 
-  console.log("bundling Remotion...");
-  const serveUrl = await bundle({
-    entryPoint: path.resolve("render/remotion/index.ts"),
-    publicDir: assets.dir,
-  });
+  try {
+    console.log("bundling Remotion...");
+    const serveUrl = await bundle({
+      entryPoint: path.resolve("render/remotion/index.ts"),
+      publicDir: assets.dir,
+    });
 
-  const inputProps: RoughCutProps = {
-    beats,
-    audioSrc,
-    musicSrc,
-    sfxEvents,
-    totalFrames,
-  };
-  // Remotion's inputProps type requires Record<string, unknown>; cast once here.
-  const inputPropsRecord = inputProps as unknown as Record<string, unknown>;
+    const inputProps: RoughCutProps = {
+      beats,
+      audioSrc,
+      musicSrc,
+      sfxEvents,
+      totalFrames,
+    };
+    // Remotion's inputProps type requires Record<string, unknown>; cast once here.
+    const inputPropsRecord = inputProps as unknown as Record<string, unknown>;
 
-  const composition = await selectComposition({
-    serveUrl,
-    id: "roughcut",
-    inputProps: inputPropsRecord,
-  });
+    const composition = await selectComposition({
+      serveUrl,
+      id: "roughcut",
+      inputProps: inputPropsRecord,
+    });
 
-  const outDir = path.join(episodeDir, "out");
-  mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, "roughcut.mp4");
+    const outDir = path.join(episodeDir, "out");
+    mkdirSync(outDir, { recursive: true });
+    const outPath = path.join(outDir, "roughcut.mp4");
 
-  console.log(`rendering ${totalFrames} frames @ ${FPS}fps → ${path.relative(process.cwd(), outPath)}`);
+    console.log(
+      `rendering ${totalFrames} frames @ ${FPS}fps → ${path.relative(process.cwd(), outPath)}`,
+    );
 
-  await renderMedia({
-    composition,
-    serveUrl,
-    codec: "h264",
-    outputLocation: outPath,
-    inputProps: inputPropsRecord,
-    overwrite: true,
-  });
+    await renderMedia({
+      composition,
+      serveUrl,
+      codec: "h264",
+      outputLocation: outPath,
+      inputProps: inputPropsRecord,
+      overwrite: true,
+    });
 
-  const durationSec = totalFrames / FPS;
-  console.log(`done: ${durationSec.toFixed(1)}s roughcut → ${path.relative(process.cwd(), outPath)}`);
+    const durationSec = totalFrames / FPS;
+    console.log(
+      `done: ${durationSec.toFixed(1)}s roughcut → ${path.relative(process.cwd(), outPath)}`,
+    );
+  } finally {
+    assets.dispose();
+  }
 }
 
 main().catch((err: unknown) => {

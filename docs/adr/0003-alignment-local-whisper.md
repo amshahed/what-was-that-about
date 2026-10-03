@@ -26,7 +26,8 @@ Use **faster-whisper** (`large-v3-turbo`, CUDA, float16) locally.
 - **+** No key, no cost, offline. Measured: 13 s of audio in 0.5 s; model load 2 s.
 - **−** Another local env to maintain (recipe in `tools/whisper/`).
 - **−** Cannot run while ComfyUI is generating (10 GB of VRAM).
-- **−** Whisper writes numbers as digits ("9 to 5"); beat matching must normalize numbers.
+- **−** Whisper writes numbers as digits ("9 to 5") or as words ("Nine"), depending on context.
+  Beat matching converts number words to digits on both sides, so either form matches.
 
 ## Revisit if
 

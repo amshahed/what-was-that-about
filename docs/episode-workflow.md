@@ -175,7 +175,10 @@ Reads `audio/narration.wav`, runs Whisper and writes `out/alignment.json` (word 
 - If `script.yml` exists, its opening narration goes to Whisper as a spelling hint for names.
 - **Fallback (`ALIGN_ENGINE=openai`):** the OpenAI Whisper API. Requires `OPENAI_API_KEY`. Use it on a
   machine without the GPU env, such as the Mac.
-- Do not run it while ComfyUI generates images — both need the 10 GB of VRAM.
+- Do not run it while ComfyUI generates images — both need the 10 GB of VRAM. If `align` is very
+  slow, ComfyUI is probably holding the VRAM (the driver moves memory to system RAM instead of
+  failing). Stop ComfyUI and run again.
+- If Whisper finds far fewer words than the script has, `align` prints a warning. Check the WAV.
 
 ### Assembly (rough cut)
 

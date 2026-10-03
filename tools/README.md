@@ -35,6 +35,7 @@ powershell -ExecutionPolicy Bypass -File tools\whisper\setup.ps1
 
 - Needs Python 3.12. `requirements.lock.txt` holds the exact versions.
 - `align.py`: word timestamps for one WAV, as JSON on stdout. `npm run align` calls it; you do not run it by hand.
-  Exit code 3 means the GPU is out of memory (stop ComfyUI first).
+  Exit code 3 means the GPU is out of memory (stop ComfyUI first). More often, a busy GPU only makes
+  it very slow, because the driver moves memory to system RAM.
 - The model (about 1.6 GB) downloads to `.whisper-env\models` the first time it runs.
 - `av` stays at 14.x. faster-whisper 1.2.1 breaks with `av` 15 or later.

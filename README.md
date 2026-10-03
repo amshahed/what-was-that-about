@@ -43,6 +43,7 @@ Design decisions: [`docs/adr/`](./docs/adr).
 
 `npm run align` uses local Whisper by default. To use the OpenAI API instead (for example on the Mac), in PowerShell:
 `$env:ALIGN_ENGINE = "openai"; $env:OPENAI_API_KEY = "sk-..."` (there is no `.env` loader).
+On the Mac (zsh): `ALIGN_ENGINE=openai OPENAI_API_KEY=sk-... npm run align <slug>`.
 See [`tools/README.md`](./tools/README.md) for the pins and the details of each tool.
 
 ## Spec & process
@@ -62,7 +63,7 @@ Spec-driven, one slice at a time:
 
 - **Phase 0 — pipeline skeleton:** done (slices #2–#12).
 - **Phase 0.5 — local upgrade:** in progress. Done: ComfyUI + Flux, Poseidon look, Whisper env,
-  `tools/` recipes. Next: local Whisper in `align` (V1), AI scene generation (V2).
-- **Phase 1 — Ubik pilot (#13):** writing can start now; rendering waits for V1 and V2.
+  `tools/` recipes, local Whisper in `align` (V1). Next: AI scene generation (V2).
+- **Phase 1 — Ubik pilot (#13):** writing can start now; rendering with AI stills waits for V2.
 
 Live status: [`plan.md`](./plan.md).

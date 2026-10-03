@@ -97,3 +97,29 @@ Fix (needed for the "assembly works unchanged" criterion):
 
 Verified: the sample episode renders (13.8 s, H.264 + AAC); beat cuts land on the spoken anchor
 words (7.4 s, 10.2 s); `npm run short sample 1 2` renders 6.4 s.
+
+## Review round 1 (technical + functional) — fixes
+
+- **Number words:** with the spelling hint, Whisper often writes numbers as words ("Nine",
+  "Twenty -one"), so skipping them made cuts up to 1.5 s late. Now both sides convert number words to
+  digits and split hyphens, so "nine", "9", "twenty-one", "Twenty -one" and "21" all match.
+- **Leading stop words:** a cut starts at the beat's first spoken word ("The god…" at "The"), only when
+  the transcript has the same leading words, and never inside the previous beat.
+- align.py: `vad_filter=True` (silence no longer yields "Thank you."), cuBLAS alloc failures count as OOM,
+  ASCII JSON, first-run download note.
+- align.ts: absolute paths in the setup errors, signal + stdout in failure messages, UTF-8-safe stream
+  reading, PowerShell syntax in hints; `runProcess` tests.
+- `npm run align` warns when the transcript has < 60% of the script's words.
+- Render folders are per command (`.render-public-roughcut`, `.render-public-short-<a>-<b>`) and are
+  deleted after the render.
+- Docs: README status, slow-not-OOM note when ComfyUI holds the VRAM, zsh form for the Mac, ADR 0003.
+
+## Verification on the GPU desktop (after review fixes)
+
+- `npm run align` with `OPENAI_API_KEY` unset, on a 4-beat test episode (12.5 s): beats start at 0.00,
+  3.03, 7.07, 10.07 s — on the first spoken word of each ("The", "Nine", "Twenty", "Then").
+- `npm run assemble` (12.5 s, video + audio) and `npm run short <dir> 1 2` (7.0 s) render; the staged
+  render folders are removed afterwards. One run logged a Remotion "Target closed" message at browser
+  shutdown with exit 0 and a complete file; a re-run did not repeat it.
+- Error paths: unknown `ALIGN_ENGINE`, `ALIGN_ENGINE=openai` without a key, missing env — all clear.
+- Not tested: a real OpenAI key; a music bed `.mp3` (none in `shared/music/` yet).
