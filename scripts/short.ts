@@ -7,7 +7,7 @@
 // Writes: episodes/<slug>/out/short-<start>-<end>.mp4
 
 import path from "node:path";
-import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { bundle } from "@remotion/bundler";
 import { selectComposition, renderMedia } from "@remotion/renderer";
 import { parseScript } from "../kit/script-parser";
@@ -105,9 +105,11 @@ async function main() {
   // Stage every file before bundle(): it copies the public folder at bundle time.
   const audioSrc = assets.add(audioPath, "narration.wav");
 
+  // bundle() writes a full copy (including the narration WAV) to %TEMP%; remove it afterwards.
+  let serveUrl: string | undefined;
   try {
     console.log("bundling Remotion...");
-    const serveUrl = await bundle({
+    serveUrl = await bundle({
       entryPoint: path.resolve("render/remotion/index.ts"),
       publicDir: assets.dir,
     });
@@ -150,6 +152,7 @@ async function main() {
     );
   } finally {
     assets.dispose();
+    if (serveUrl) rmSync(serveUrl, { recursive: true, force: true });
   }
 }
 

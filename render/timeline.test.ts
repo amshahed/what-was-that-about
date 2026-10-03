@@ -58,6 +58,21 @@ describe("mapBeatsToTimeline", () => {
       expect(entries[1]!.startFrame).toBe(Math.round(2.0 * FPS));
     });
 
+    it("does not join a tens word with a number in the next sentence", () => {
+      const beats = [beat("She turned thirty."), beat("Two days later she left.")];
+      const aln = alignment(
+        [
+          { word: " She", start: 0.0, end: 0.2 },
+          { word: " turned", start: 0.3, end: 0.6 },
+          { word: " thirty.", start: 0.7, end: 1.2 },
+          { word: " Two", start: 2.0, end: 2.2 },
+          { word: " days", start: 2.3, end: 2.6 },
+        ],
+        4.0,
+      );
+      expect(mapBeatsToTimeline(beats, aln, FPS)[1]!.startFrame).toBe(Math.round(2.0 * FPS));
+    });
+
     it("matches a hyphenated non-number first word", () => {
       const beats = [beat("Hello there"), beat("Well-known guards stood.")];
       const aln = alignment(

@@ -27,7 +27,8 @@ Use **faster-whisper** (`large-v3-turbo`, CUDA, float16) locally.
 - **−** Another local env to maintain (recipe in `tools/whisper/`).
 - **−** Cannot run while ComfyUI is generating (10 GB of VRAM).
 - **−** Whisper writes numbers as digits ("9 to 5") or as words ("Nine"), depending on context.
-  Beat matching converts number words to digits on both sides, so either form matches.
+  Beat matching converts number words up to 99 to digits on both sides, so "nine", "9", "twenty-one"
+  and "21" match. Larger numbers and years in words vs digits do not; those beats use estimated timing.
 
 ## Revisit if
 

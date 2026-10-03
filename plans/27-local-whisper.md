@@ -43,6 +43,9 @@ A small Python script that runs in `.whisper-env`:
 
 ### 4 — Number words (from ADR 0003)
 
+> *Superseded in review round 1:* skipping number words made cuts late when Whisper writes
+> words. The final code converts number words to digits on both sides — see § Review round 1.
+
 Whisper writes "nine to five" as "9 to 5". Beat matching (`render/timeline.ts`) anchors each beat on its
 first significant word. A beat that starts with a number would miss its anchor and fall back to estimated timing.
 Fix: treat digits and number words (zero–twenty, tens, hundred, thousand, million, billion) as stop words in
@@ -123,3 +126,10 @@ words (7.4 s, 10.2 s); `npm run short sample 1 2` renders 6.4 s.
   shutdown with exit 0 and a complete file; a re-run did not repeat it.
 - Error paths: unknown `ALIGN_ENGINE`, `ALIGN_ENGINE=openai` without a key, missing env — all clear.
 - Not tested: a real OpenAI key; a music bed `.mp3` (none in `shared/music/` yet).
+
+## Review round 2 (final reviewer) — fixes
+
+- A tens word no longer joins a number in the next clause ("thirty. Two" stays 30, 2).
+- `assemble` and `short` delete Remotion's bundle folder in %TEMP% after the render (it holds a copy of
+  the narration WAV).
+- PRD §8.3 and ADR 0003 describe the number matching as built, including its limit (numbers above 99).

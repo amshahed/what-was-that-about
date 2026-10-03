@@ -102,18 +102,20 @@ interface Token {
 
 /** Normalized tokens; hyphenated words split; number words become digits ("twenty one" → "21"). */
 function numberTokens(rawWords: string[]): Token[] {
-  const parts: Token[] = [];
+  // breakAfter: the piece ends a clause ("thirty." / "twenty,"), so it never joins the next word —
+  // "She turned thirty. Two days later" must stay "30", "2", not "32".
+  const parts: Array<Token & { breakAfter: boolean }> = [];
   rawWords.forEach((w, index) => {
     for (const piece of w.split("-")) {
       const text = normalize(piece);
-      if (text) parts.push({ text, index });
+      if (text) parts.push({ text, index, breakAfter: /[.,;:!?…]["')\]]*$/.test(piece) });
     }
   });
   const out: Token[] = [];
   for (let k = 0; k < parts.length; k++) {
     const { text, index } = parts[k]!;
     const tens = TENS[text];
-    const next = parts[k + 1] ? UNITS[parts[k + 1]!.text] : undefined;
+    const next = parts[k + 1] && !parts[k]!.breakAfter ? UNITS[parts[k + 1]!.text] : undefined;
     if (tens !== undefined && next !== undefined && next >= 1 && next <= 9) {
       out.push({ text: String(tens + next), index });
       k++;
