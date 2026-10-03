@@ -5,10 +5,11 @@ import { RRect } from "../rough/rough";
 import { PALETTE, CAPTION_FONT } from "../rough/style";
 
 export const Caption = ({ text }: { text: string }) => {
-  const y = 32;
+  // Occupies y 24–104. Kit scenes that use a caption keep that band free of important art.
+  const y = 24;
   return (
     <g>
-      {RRect(120, y, 1680, 96, {
+      {RRect(160, y, 1600, 80, {
         fill: "#fffef6",
         fillStyle: "solid",
         stroke: PALETTE.ink,
@@ -16,10 +17,10 @@ export const Caption = ({ text }: { text: string }) => {
       })}
       <text
         x={960}
-        y={y + 62}
+        y={y + 54}
         textAnchor="middle"
         fontFamily={CAPTION_FONT}
-        fontSize={46}
+        fontSize={42}
         fill={PALETTE.ink}
       >
         {text}

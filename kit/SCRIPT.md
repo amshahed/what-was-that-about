@@ -17,7 +17,7 @@ beats:
       layers:              # ≥1 layer, painted back-to-front
         - component: string       # registered kit id (bg:..., actor:..., prop:..., caption)
           props: { ... }          # untyped; the component's adapter validates at render time
-      caption: string?     # optional caption bar at the top of the frame (auto-appended as a layer)
+      caption: string?     # optional caption bar at the top (y 24–104 of 1080; keep that band clear)
     tags: [string]?        # optional list — see Tag grammar below
 ```
 

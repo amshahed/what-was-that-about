@@ -106,7 +106,8 @@ Each beat has one picture. Pick one of two kinds:
   Describe the action, expression and setting ("…; setting: …"). Do not describe the character's
   look — the character file holds it. The style prompt is fixed, so do not add style words. List
   up to 3 characters in `cast`, left to right; prefer one per image. Keep the subject in the
-  middle of the frame — Shorts show only the middle third. Avoid text in the image; put words in
+  middle of the frame — Shorts show only the middle third. Do not ask for dark lighting ("gloomy", "dim", "night"): the channel look is bright and
+  flat. Avoid text in the image; put words in
   `caption` or a code-kit beat. `layers` and `image` cannot both be set; unknown fields and
   unknown characters are errors.
 - **Code-kit scene** — for text-hero beats (a giant word, number or `?`) and diagrams. Image
@@ -138,7 +139,9 @@ Characters live in `shared/characters/` (see its README); the channel look in `s
 
 ## Stage 4 — Scene images
 
-Start ComfyUI first: `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
+If ComfyUI is not running on this PC, `generate-scenes` starts `C:\ComfyUI\run_nvidia_gpu_lan.bat`
+in a new window and waits for it (set `COMFYUI_DIR` if it is installed elsewhere). Close that window
+when you are done.
 
 ```
 npm run generate-scenes <slug>
@@ -160,7 +163,9 @@ npm run generate-scenes <slug> -- --pick 7=2,12=1 # keep a candidate: pins its s
 ```
 
 Other options (after `--`): `--only 2,5-7`, `--force`, `--dry-run` (prompts only, no ComfyUI),
-`--prune` (delete unused PNGs: old takes and unpicked candidates). Editing a beat's `image` text
+`--prune` (delete unused PNGs: old takes and unpicked candidates — pick first), `--keep-loaded`
+(leave the models in VRAM for a faster next run; then stop ComfyUI before `align`). Always put
+`--` before the options; without it npm keeps them, and the command stops with a hint. Editing a beat's `image` text
 also gives a new image on the next run.
 
 ---
@@ -191,9 +196,9 @@ Reads `audio/narration.wav`, runs Whisper and writes `out/alignment.json` (word 
 - If `script.yml` exists, its opening narration goes to Whisper as a spelling hint for names.
 - **Fallback (`ALIGN_ENGINE=openai`):** the OpenAI Whisper API. Requires `OPENAI_API_KEY`. Use it on a
   machine without the GPU env, such as the Mac.
-- Do not run it while ComfyUI generates images — both need the 10 GB of VRAM. If `align` is very
-  slow, ComfyUI is probably holding the VRAM (the driver moves memory to system RAM instead of
-  failing). Stop ComfyUI and run again.
+- `align` first asks a local ComfyUI to unload its models (both need the 10 GB of VRAM). If
+  `align` is still very slow, ComfyUI is holding the VRAM anyway (the driver moves memory to
+  system RAM instead of failing): stop ComfyUI and run again.
 - If Whisper finds far fewer words than the script has, `align` prints a warning. Check the WAV.
 
 ### Assembly (rough cut)

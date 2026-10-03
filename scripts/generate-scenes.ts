@@ -11,10 +11,13 @@
 //   --reroll 7,12   make 3 new candidates for each beat (seed +1…+3); see out/scenes.html
 //   --pick 7=2      keep candidate 2 of beat 7: pins its seed in script.yml
 //   --prune         delete PNGs that no beat uses (including unpicked candidates)
+//   --keep-loaded   leave the models in VRAM afterwards (faster next run; blocks npm run align)
 // Server: COMFY_URL (default http://127.0.0.1:8188).
 
 import path from "node:path";
-import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { pathToFileURL } from "node:url";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { resolveEpisodeDir, requireFile } from "./lib/episode";
 import {
   loadEpisodeScenes,
@@ -32,6 +35,8 @@ import {
   stillFileName,
   TOKEN_WARNING,
   type Manifest,
+  candidateSeeds,
+  currentCandidates,
   type PlannedStill,
 } from "../render/scene-prompt";
 import {
@@ -54,6 +59,7 @@ interface Options {
   reroll?: number[];
   pick?: Array<[number, number]>;
   prune: boolean;
+  keepLoaded: boolean;
 }
 
 function usage(): never {
@@ -63,10 +69,20 @@ function usage(): never {
   process.exit(2);
 }
 
+const NPM_EATEN = ["only", "force", "dry_run", "reroll", "pick", "prune", "keep_loaded"];
+
 function parseArgs(argv: string[]): Options {
+  // Without `--`, npm keeps flags such as --dry-run for itself (and drops them silently).
+  const eaten = NPM_EATEN.filter((k) => process.env[`npm_config_${k}`] !== undefined);
+  if (eaten.length > 0) {
+    throw new Error(
+      `npm took --${eaten[0]!.replace("_", "-")} for itself. Put -- before the options: ` +
+        "npm run generate-scenes <slug> -- --dry-run",
+    );
+  }
   const [slug, ...rest] = argv;
   if (!slug || slug.startsWith("-")) usage();
-  const o: Options = { slug, force: false, dryRun: false, prune: false };
+  const o: Options = { slug, force: false, dryRun: false, prune: false, keepLoaded: false };
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
     const val = () => rest[++i] ?? usage();
@@ -83,7 +99,12 @@ function parseArgs(argv: string[]): Options {
           return [Number(m[1]), Number(m[2])] as [number, number];
         });
     } else if (a === "--prune") o.prune = true;
-    else throw new Error(`unknown option "${a}"`);
+    else if (a === "--keep-loaded") o.keepLoaded = true;
+    else if (!a.startsWith("-")) {
+      throw new Error(
+        `unexpected "${a}" — did you forget -- before the options? (npm run generate-scenes <slug> -- --only 3)`,
+      );
+    } else throw new Error(`unknown option "${a}"`);
   }
   return o;
 }
@@ -125,19 +146,57 @@ function writePage(
 }
 
 /** --pick: pin the chosen candidate's seed in script.yml (only the seed text changes). */
-function pickCandidates(scriptPath: string, ep: EpisodeScenes, picks: Array<[number, number]>): void {
+function pickCandidates(
+  scriptPath: string,
+  ep: EpisodeScenes,
+  picks: Array<[number, number]>,
+): void {
   let text = readFileSync(scriptPath, "utf8");
   for (const [beat, no] of picks) {
     const still = ep.plan.stills.find((s) => s.beat === beat);
     if (!still) throw new Error(`beat ${beat} is not an AI-still beat`);
-    const entry = Object.values(ep.manifest.beats).find(
-      (e) => e.candidateFor === beat && e.candidateNo === no && e.image === still.scene.image,
+    const entry = currentCandidates(ep.manifest, beat, still.scene.image).find(
+      (e) => e.candidateNo === no,
     );
     if (!entry) throw new Error(`no candidate ${no} for beat ${beat} — run --reroll ${beat} first`);
     text = setSceneSeed(text, beat, entry.seed);
+    // The pick is now the beat's still; the other candidates become unused (see --prune).
+    for (const e of currentCandidates(ep.manifest, beat, still.scene.image)) {
+      delete e.candidateFor;
+      delete e.candidateNo;
+    }
+    entry.seedSource = "pinned";
     console.log(`beat ${beat}: kept candidate ${no} (seed ${entry.seed})`);
   }
   writeFileSync(scriptPath, text);
+  writeManifest(path.dirname(scriptPath), ep.manifest);
+}
+
+const COMFY_DIR = process.env.COMFYUI_DIR ?? "C:\\ComfyUI";
+const LAUNCHER = "run_nvidia_gpu_lan.bat";
+
+/** When ComfyUI is meant to run on this PC and is not up, start it in its own window and wait. */
+async function startComfyIfLocal(client: ComfyClient): Promise<void> {
+  const local = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(client.baseUrl);
+  if (!local || process.platform !== "win32" || (await client.ping())) return;
+  if (!existsSync(path.join(COMFY_DIR, LAUNCHER))) return; // preflight explains what to do
+  console.log(
+    `ComfyUI is not running — starting ${path.join(COMFY_DIR, LAUNCHER)} in a new window ...`,
+  );
+  spawn("cmd.exe", ["/c", "start", '"ComfyUI"', "/D", COMFY_DIR, LAUNCHER], {
+    detached: true,
+    stdio: "ignore",
+    windowsVerbatimArguments: true,
+  }).unref();
+  const deadline = Date.now() + 180_000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 3000));
+    if (await client.ping()) {
+      console.log("ComfyUI is up.");
+      return;
+    }
+  }
+  // Fall through: preflight reports that it is not reachable.
 }
 
 async function main() {
@@ -160,6 +219,10 @@ async function main() {
       throw new Error(`beat ${n} does not exist (the script has beats 0–${beatCount - 1})`);
   }
   const selected = ep.plan.stills.filter((s) => !opts.only || opts.only.includes(s.beat));
+  for (const n of opts.only ?? []) {
+    if (!ep.plan.stills.some((s) => s.beat === n))
+      console.warn(`beat ${n} is a code-kit scene; nothing to generate`);
+  }
 
   // What to make: stills that are missing/stale (or all with --force), plus --reroll candidates.
   const jobs: Job[] =
@@ -172,13 +235,19 @@ async function main() {
     const still = ep.plan.stills.find((s) => s.beat === beat);
     if (!still)
       throw new Error(`beat ${beat} is a code-kit scene; only AI stills can be re-rolled`);
-    for (let n = 1; n <= CANDIDATES; n++) {
-      const seed = (still.seed + n) % 2 ** 32;
+    // Each round continues after the highest seed tried so far, so a second --reroll gives new images.
+    for (const [n, seed] of candidateSeeds(
+      ep.manifest,
+      beat,
+      still.scene.image,
+      still.seed,
+      CANDIDATES,
+    ).entries()) {
       const file = stillFileName(
         still.scene.image,
         authorKey(still.scene.image, still.scene.cast, seed),
       );
-      jobs.push({ still, seed, file, candidateNo: n });
+      jobs.push({ still, seed, file, candidateNo: n + 1 });
     }
   }
 
@@ -193,12 +262,23 @@ async function main() {
   }
 
   if (opts.dryRun) {
+    const queued = new Set(jobs.map((j) => j.still.beat));
+    for (const s of selected.filter((x) => !queued.has(x.beat))) {
+      console.log(
+        `\nbeat ${s.beat} · seed ${s.seed} · ${s.status} → scenes/${s.file}\n  ${s.prompt}`,
+      );
+    }
     for (const j of jobs) {
       console.log(
         `\nbeat ${j.still.beat} · seed ${j.seed}${j.candidateNo ? ` · candidate ${j.candidateNo}` : ""} → scenes/${j.file}\n  ${j.still.prompt}`,
       );
     }
-    console.log(`\nreview page: ${writePage(episodeDir, opts.slug, ep, new Set())}`);
+    if (ep.plan.orphans.length > 0) {
+      console.log(`\nunused PNGs (--prune would delete): ${ep.plan.orphans.join(", ")}`);
+    }
+    console.log(
+      `\nreview page: ${pathToFileURL(writePage(episodeDir, opts.slug, ep, new Set())).href}`,
+    );
     return;
   }
 
@@ -206,6 +286,9 @@ async function main() {
     for (const f of ep.plan.orphans) {
       rmSync(path.join(scenesDir(episodeDir), f), { force: true });
       delete ep.manifest.beats[f];
+    }
+    for (const f of Object.keys(ep.manifest.beats)) {
+      if (!existsSync(path.join(scenesDir(episodeDir), f))) delete ep.manifest.beats[f];
     }
     writeManifest(episodeDir, ep.manifest);
     console.log(`pruned ${ep.plan.orphans.length} unused PNG(s)`);
@@ -215,6 +298,7 @@ async function main() {
   const fresh = new Set<string>();
   if (jobs.length > 0) {
     const client = new ComfyClient(process.env.COMFY_URL ?? DEFAULT_COMFY_URL);
+    await startComfyIfLocal(client);
     const { version } = await client.preflight(templateModels(ep.workflow.template));
     console.log(`ComfyUI ${version} at ${client.baseUrl}`);
     process.once("SIGINT", () => {
@@ -223,6 +307,13 @@ async function main() {
     });
 
     const manifest: Manifest = readManifest(episodeDir, ep.script.id);
+    for (const beat of opts.reroll ?? []) {
+      const still = ep.plan.stills.find((x) => x.beat === beat)!;
+      for (const e of currentCandidates(manifest, beat, still.scene.image)) {
+        delete e.candidateFor;
+        delete e.candidateNo;
+      }
+    }
     const dir = scenesDir(episodeDir);
     mkdirSync(dir, { recursive: true });
     const times: number[] = [];
@@ -276,7 +367,9 @@ async function main() {
         if (err instanceof ComfyError && /cannot reach|not responding/.test(msg)) break;
       }
     }
-    if (await client.free()) console.log("ComfyUI models unloaded (VRAM free for npm run align).");
+    if (!opts.keepLoaded && (await client.free())) {
+      console.log("ComfyUI models unloaded (VRAM free for npm run align).");
+    }
     ep = loadEpisodeScenes(episodeDir, scriptPath);
     if (failures.length > 0) {
       console.error(`\n${failures.length} still(s) failed:\n  ${failures.join("\n  ")}`);
@@ -289,7 +382,7 @@ async function main() {
       `${ep.plan.orphans.length} unused PNG(s) in scenes/ (old takes / candidates); --prune deletes them`,
     );
   }
-  console.log(`review page: ${writePage(episodeDir, opts.slug, ep, fresh)}`);
+  console.log(`review page: ${pathToFileURL(writePage(episodeDir, opts.slug, ep, fresh)).href}`);
 }
 
 main().catch((err: unknown) => {

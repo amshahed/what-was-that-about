@@ -126,7 +126,7 @@ The visual + assembly layers are **real code living in this repo** (GitHub: `ams
 
 ### 8.1 Visual generation — local AI stills (locked 2026-09-26)
 - **Stills, not animation.** No lip sync, no talking, no movement. Motion comes from Remotion (Ken Burns, cuts).
-- **Engine:** **ComfyUI** (Windows portable build) running **Flux.1 Dev, GGUF Q5_K_S** quant (fits 10 GB VRAM), with T5-XXL fp8 + CLIP-L text encoders and the Flux VAE. About 45–60 s per 1024×1024 image.
+- **Engine:** **ComfyUI** (Windows portable build) running **Flux.1 Dev, GGUF Q5_K_S** quant (fits 10 GB VRAM), with T5-XXL fp8 + CLIP-L text encoders and the Flux VAE. About 50 s per 1344×768 image.
 - **Local, not a cloud API:** zero per-image cost, full control, privacy.
 - **Aesthetic:** cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack): thick clean black outlines, flat bright colors, minimal shading, simple shapes. A fixed style prompt holds it. This *is* the brand look.
 - **Character consistency:** each recurring character has a **character file** with a locked text description that the generator adds to every prompt that casts that character. Prompt-only consistency is good for build, hair, outfit and props; it is weak for precise hand poses. Planned upgrades, in order: **Poseidon LoRA** trained on the approved reference set → **IP-Adapter** → **ControlNet** for pose. Target: ~95% consistency.
@@ -207,13 +207,13 @@ The repo holds the **recipe** for each tool. The large installs and model files 
 
 ### 9.1 Captions — two-tier design (locked)
 
-We do **not** use per-word pop captions (TikTok-style). They feel childish/unserious for an analysis channel and fight the visual for attention. Instead, two tiers — one always-on, one selective:
+We do **not** use per-word pop captions (TikTok-style). They feel childish/unserious for an analysis channel and fight the visual for attention. Instead, three tiers — one always-on, two selective:
 
 1. **Line-pop subtitles (always on, bottom of the frame).** Burned-in, animated **one-line-at-a-time** captions running the full episode. Generated from the script + word-timestamps; ships free with the alignment step. Retention-friendly, accessible, and tonally calm — it disappears into the background.
 2. **Text-hero emphasis scenes (selective).** When a beat needs emphasis, the **image *is* the emphasis** — a big bold word / number / phrase fills the frame as the actual scene (e.g. **3,000 YEARS** in giant red type over a clean background, or a single huge **`?`**). This replaces the picture for that beat; it's a visual choice in the script, not a caption styling toggle. Author by composing the emphasis as a code-kit beat, not an AI image, so the text is exact (see §6.0 — images carry the message).
 3. **Beat captions (`scene.caption`, optional).** A short joke line in a bar at the **top** of the frame, on kit and AI beats alike. The top keeps it clear of the subtitles; in Shorts it is drawn at 9:16 width so the crop never cuts it.
 
-The two tiers complement: subtitles handle the unbroken accessibility/retention layer; emphasis scenes handle the comic / dramatic punch points.
+The tiers complement: subtitles handle the unbroken accessibility/retention layer; emphasis scenes handle the comic / dramatic punch points.
 
 ### 9.2 Music & SFX (defaults — adjustable)
 
@@ -300,10 +300,10 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - Repo scaffold; Rough.js component kit (a few actors/poses/props/backgrounds); rendering layer (Remotion or FFmpeg); script→render path; forced-alignment + assembly; caption/music/SFX wiring; vertical Shorts render.
 - Exit: a throwaway 60-sec test renders end-to-end from a fake script + scratch audio. **✅ Done (slices #2–#12).**
 
-**Phase 0.5 — Local visual + audio upgrade** *(in progress)*
+**Phase 0.5 — Local visual + audio upgrade** *(done)*
 - Done: ComfyUI + Flux GGUF on the GPU desktop; Poseidon look locked "for now"; local faster-whisper env; `tools/` setup recipes.
-- To build: local Whisper in `align`; AI scene generation (`image:` beats, character files, `generate-scenes`, assembly uses PNGs).
-- Exit: the sample episode renders end-to-end with AI stills and local alignment.
+- Built: local Whisper in `align` (V1, #27); AI scene generation (V2, #29).
+- Exit: the sample episode renders end-to-end with AI stills and local alignment. **✅ Done.**
 
 **Phase 1 — Ubik pilot** *(full pipeline dry-run)*
 - User seed → research → script (**Heavy** tone) → fact-check (`Status: ✅ approved`) → generate + review stills → record → align → assemble → polish → Pipeline A Shorts.

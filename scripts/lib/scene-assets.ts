@@ -44,8 +44,9 @@ export function loadStyle(file = STYLE_FILE): SceneStyle {
 }
 
 export function loadWorkflow(file = WORKFLOW_FILE): { template: unknown; hash: string } {
-  const text = readFileSync(file, "utf8");
-  return { template: JSON.parse(text), hash: hashText(text.replace(/\r\n/g, "\n")) };
+  const template: unknown = JSON.parse(readFileSync(file, "utf8"));
+  // Hash the parsed JSON, so reformatting the file does not mark every still stale.
+  return { template, hash: hashText(JSON.stringify(template)) };
 }
 
 export function scenesDir(episodeDir: string): string {

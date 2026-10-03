@@ -142,6 +142,7 @@ describe("ComfyClient.generate", () => {
     const { client, calls } = fakeServer({
       "/prompt": () => json({ prompt_id: "abc" }),
       "/history/abc": () => json(++polls < 3 ? {} : { abc: done }),
+      "/queue": () => json({ queue_running: [[0, "abc"]], queue_pending: [] }),
       "/view": () => new Response(PNG),
     });
     await expect(client.generate(wf, 60_000)).resolves.toEqual(PNG);
@@ -187,8 +188,8 @@ describe("ComfyClient.generate", () => {
     const { client, calls } = fakeServer({
       "/prompt": () => json({ prompt_id: "abc" }),
       "/history/abc": () => json({}),
+      "/queue": () => json({ queue_running: [[0, "abc"]], queue_pending: [] }),
       "/interrupt": () => json({}),
-      "/queue": () => json({}),
     });
     await expect(client.generate(wf, 10_000)).rejects.toThrow("no image after 10 s");
     expect(calls).toContain("POST /interrupt");
@@ -201,6 +202,54 @@ describe("ComfyClient.generate", () => {
       "/view": () => new Response("<html>"),
     });
     await expect(client.generate(wf, 60_000)).rejects.toBeInstanceOf(ComfyError);
+  });
+
+  it("fails fast when the job disappears (ComfyUI restarted)", async () => {
+    const { client } = fakeServer({
+      "/prompt": () => json({ prompt_id: "abc" }),
+      "/history/abc": () => json({}),
+      "/queue": () => json({ queue_running: [], queue_pending: [] }),
+    });
+    await expect(client.generate(wf, 600_000)).rejects.toThrow("the job disappeared from ComfyUI");
+  });
+
+  it("stops only its own job on interrupt", async () => {
+    const bodies: string[] = [];
+    const { client } = fakeServer({
+      "/interrupt": (_u, init) => {
+        bodies.push(String(init?.body));
+        return json({});
+      },
+      "/queue": () => json({}),
+    });
+    await client.interrupt("abc");
+    expect(bodies).toEqual(['{"prompt_id":"abc"}']);
+  });
+
+  it("does not retry a 4xx answer", async () => {
+    const { client, calls } = fakeServer({
+      "/prompt": () => json({ prompt_id: "abc" }),
+      "/history/abc": () => json({ error: "gone" }, 404),
+    });
+    await expect(client.generate(wf, 60_000)).rejects.toThrow("HTTP 404");
+    expect(calls.filter((c) => c.startsWith("GET /history")).length).toBe(1);
+  });
+
+  it("reports a job stopped from the ComfyUI side", async () => {
+    const { client } = fakeServer({
+      "/prompt": () => json({ prompt_id: "abc" }),
+      "/history/abc": () =>
+        json({
+          abc: {
+            status: {
+              status_str: "error",
+              completed: false,
+              messages: [["execution_interrupted", {}]],
+            },
+          },
+        }),
+    });
+    await expect(client.generate(wf, 60_000)).rejects.toThrow("interrupted in ComfyUI");
   });
 });
 

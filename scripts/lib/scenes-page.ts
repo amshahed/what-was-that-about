@@ -32,24 +32,25 @@ export function renderScenesPage(p: PageInput): string {
     const img =
       still.status === "missing"
         ? `<div class="missing">not generated yet</div>`
-        : `<img src="${p.scenesHref}/${esc(still.file)}" title="${esc(still.prompt)}" loading="lazy">`;
+        : `<a href="${p.scenesHref}/${esc(still.file)}" target="_blank"><img src="${p.scenesHref}/${esc(still.file)}" title="${esc(still.prompt)}" loading="lazy"></a>`;
     const badges = [
       p.fresh.has(still.file) ? `<span class="badge new">NEW</span>` : "",
       still.status === "stale" ? `<span class="badge stale">stale</span>` : "",
+      still.seedSource === "pinned" ? `<span class="badge pinned">kept</span>` : "",
     ].join("");
     const candidates = Object.entries(p.manifest.beats)
       .filter(([, e]) => e.candidateFor === i && e.image === still.scene.image)
       .sort(([, a], [, b]) => (a.candidateNo ?? 0) - (b.candidateNo ?? 0))
       .map(
         ([file, e]) =>
-          `<div class="cand"><img src="${p.scenesHref}/${esc(file)}" title="seed ${e.seed}" loading="lazy"><span>${i}=${e.candidateNo}</span></div>`,
+          `<div class="cand"><a href="${p.scenesHref}/${esc(file)}" target="_blank"><img src="${p.scenesHref}/${esc(file)}" title="seed ${e.seed}" loading="lazy"></a><code>--pick ${i}=${e.candidateNo}</code></div>`,
       )
       .join("");
     const candBlock = candidates
-      ? `<div class="cands">${candidates}</div><div class="hint">keep one: npm run generate-scenes ${esc(p.slug)} -- --pick ${i}=N</div>`
+      ? `<div class="cands">${candidates}</div><div class="hint">keep one: npm run generate-scenes ${esc(p.slug)} -- --pick ${i}=N (click an image to see it full size)</div>`
       : "";
     return `<figure class="card">${img}${badges}
-<figcaption><b>${i}</b> ${narration}<br><small>seed ${still.seed} (${still.seedSource})</small></figcaption>${candBlock}</figure>`;
+<figcaption><b>${i}</b> ${narration}${beat.scene.caption ? `<br><i>caption: ${esc(beat.scene.caption)}</i>` : ""}<br><small>seed ${still.seed} (${still.seedSource})</small></figcaption>${candBlock}</figure>`;
   });
 
   return `<!doctype html>
@@ -68,8 +69,9 @@ figcaption { padding: 8px 10px; } figcaption small { color: var(--muted); }
 .kit-caption { font-weight: 600; color: var(--fg); padding: 4px 8px; text-align: center; }
 .badge { position: absolute; top: 8px; left: 8px; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; }
 .badge.new { background: #2e7d32; color: #fff; } .badge.stale { background: #b26a00; color: #fff; left: auto; right: 8px; }
-.cands { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 0 8px 4px; }
-.cand { position: relative; } .cand span { position: absolute; bottom: 2px; right: 4px; font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000; }
+.badge.pinned { background: #1565c0; color: #fff; top: auto; bottom: 8px; left: auto; right: 8px; }
+.cands { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 0 8px 4px; }
+.cand code { display: block; font-size: 12px; padding: 2px 0 0; }
 .hint { font-size: 12px; color: var(--muted); padding: 0 10px 8px; font-family: ui-monospace, monospace; }
 </style></head><body>
 <h1>${esc(p.script.id)} — ${p.script.beats.length} beats, ${p.plan.stills.length} AI stills</h1>

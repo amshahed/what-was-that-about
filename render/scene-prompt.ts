@@ -16,6 +16,8 @@ export interface Character {
 export interface SceneStyle {
   prefix: string;
   suffix: string;
+  /** Added for beats that have a caption, which sits in a bar at the top of the frame. */
+  captionSpace?: string;
   width: number;
   height: number;
   steps: number;
@@ -23,7 +25,15 @@ export interface SceneStyle {
 }
 
 const CHARACTER_KEYS = new Set(["id", "name", "description", "short", "notes"]);
-const STYLE_KEYS = new Set(["prefix", "suffix", "width", "height", "steps", "guidance"]);
+const STYLE_KEYS = new Set([
+  "prefix",
+  "suffix",
+  "captionSpace",
+  "width",
+  "height",
+  "steps",
+  "guidance",
+]);
 
 function asRecord(raw: unknown, where: string): Record<string, unknown> {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -82,6 +92,7 @@ export function parseStyle(yamlText: string): SceneStyle {
   return {
     prefix: text(obj, "prefix", where)!,
     suffix: text(obj, "suffix", where)!,
+    captionSpace: text(obj, "captionSpace", where, false),
     width: num("width", dim, "a multiple of 64 from 256 to 2048"),
     height: num("height", dim, "a multiple of 64 from 256 to 2048"),
     steps: num(
@@ -99,8 +110,16 @@ const POSITIONS: Record<number, string[]> = {
   3: ["On the left", "In the middle", "On the right"],
 };
 
-/** prefix → cast → image → suffix. One character gets its full description; 2–3 get `short` + a position. */
-export function composePrompt(style: SceneStyle, cast: Character[], image: string): string {
+/**
+ * prefix → cast → image → suffix (→ captionSpace when the beat has a caption).
+ * One character gets its full description; 2–3 get `short` + a position.
+ */
+export function composePrompt(
+  style: SceneStyle,
+  cast: Character[],
+  image: string,
+  opts: { caption?: boolean } = {},
+): string {
   const parts = [sentence(style.prefix)];
   if (cast.length === 1) {
     parts.push(sentence(cast[0]!.description));
@@ -112,6 +131,7 @@ export function composePrompt(style: SceneStyle, cast: Character[], image: strin
     });
   }
   parts.push(sentence(image), sentence(style.suffix));
+  if (opts.caption && style.captionSpace) parts.push(sentence(style.captionSpace));
   return parts.join(" ");
 }
 
@@ -234,7 +254,7 @@ export function planScenes(script: Script, ctx: PlanContext): ScenePlan {
     });
     const { seed, source } = effectiveSeed(scene);
     const file = stillFileName(scene.image, authorKey(scene.image, scene.cast, seed));
-    const prompt = composePrompt(ctx.style, cast, scene.image);
+    const prompt = composePrompt(ctx.style, cast, scene.image, { caption: !!scene.caption });
     const key = renderKey(prompt, seed, ctx.style, ctx.workflowHash);
     const status: StillStatus = !ctx.existing.has(file)
       ? "missing"
@@ -256,6 +276,30 @@ export function planScenes(script: Script, ctx: PlanContext): ScenePlan {
   const used = new Set(stills.map((s) => s.file));
   const orphans = [...ctx.existing].filter((f) => !used.has(f)).sort();
   return { stills, orphans };
+}
+
+/** The latest --reroll round's candidates for a beat (older rounds are cleared when a new one starts). */
+export function currentCandidates(
+  manifest: Manifest,
+  beat: number,
+  image: string,
+): ManifestEntry[] {
+  return Object.values(manifest.beats).filter((e) => e.candidateFor === beat && e.image === image);
+}
+
+/** Seeds for a new --reroll round: after the highest seed tried for this beat, so every round is new. */
+export function candidateSeeds(
+  manifest: Manifest,
+  beat: number,
+  image: string,
+  currentSeed: number,
+  count: number,
+): number[] {
+  const tried = Object.values(manifest.beats)
+    .filter((e) => e.beat === beat && e.image === image)
+    .map((e) => e.seed);
+  const base = Math.max(currentSeed, ...tried);
+  return Array.from({ length: count }, (_, i) => (base + i + 1) % 2 ** 32);
 }
 
 /** "2,5-7" → [2, 5, 6, 7]. */

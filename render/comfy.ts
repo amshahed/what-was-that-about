@@ -95,28 +95,54 @@ export class ComfyClient {
     private readonly deps: ComfyDeps = defaultDeps,
   ) {}
 
-  private async request(path: string, init?: RequestInit, timeoutMs = 30_000): Promise<Response> {
+  /**
+   * One HTTP call. The timeout covers the response body too (a stalled download must not hang),
+   * so callers read the body inside `read`.
+   */
+  private async call<T>(
+    path: string,
+    init: RequestInit | undefined,
+    timeoutMs: number,
+    read: (res: Response) => Promise<T>,
+  ): Promise<T> {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      return await this.deps.fetch(`${this.baseUrl}${path}`, { ...init, signal: ctrl.signal });
-    } catch (err) {
-      const why = err instanceof Error ? err.message : String(err);
-      throw new ComfyError(`cannot reach ComfyUI at ${this.baseUrl} (${why})`, START_HINT);
+      let res: Response;
+      try {
+        res = await this.deps.fetch(`${this.baseUrl}${path}`, { ...init, signal: ctrl.signal });
+      } catch (err) {
+        const why = ctrl.signal.aborted
+          ? `no answer in ${timeoutMs / 1000} s`
+          : err instanceof Error
+            ? err.message
+            : String(err);
+        throw new ComfyError(`cannot reach ComfyUI at ${this.baseUrl} (${why})`, START_HINT);
+      }
+      try {
+        return await read(res);
+      } catch (err) {
+        if (ctrl.signal.aborted) {
+          throw new ComfyError(`ComfyUI stopped sending ${path} (timeout ${timeoutMs / 1000} s)`);
+        }
+        throw err;
+      }
     } finally {
       clearTimeout(timer);
     }
   }
 
-  /** GETs are safe to retry (1 s, 2 s, 4 s). POSTs are never retried, so jobs are not duplicated. */
-  private async getJson<T>(path: string, timeoutMs?: number): Promise<T> {
+  /** GETs are safe to retry (1 s, 2 s, 4 s) on network errors and 5xx. POSTs are never retried. */
+  private async getJson<T>(path: string, timeoutMs = 30_000): Promise<T> {
     let last: unknown;
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
-        const res = await this.request(path, undefined, timeoutMs);
-        if (!res.ok) throw new ComfyError(`GET ${path} → HTTP ${res.status}`);
-        return (await res.json()) as T;
+        return await this.call(path, undefined, timeoutMs, async (res) => {
+          if (!res.ok) throw new HttpError(path, res.status);
+          return (await res.json()) as T;
+        });
       } catch (err) {
+        if (err instanceof HttpError && err.status < 500) throw err; // deterministic; retrying cannot help
         last = err;
         if (attempt < 3) await this.deps.sleep(1000 * 2 ** attempt);
       }
@@ -124,14 +150,45 @@ export class ComfyClient {
     throw last;
   }
 
+  private postJson(
+    path: string,
+    body: unknown,
+    timeoutMs = 30_000,
+  ): Promise<{ ok: boolean; status: number; json: unknown }> {
+    return this.call(
+      path,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      timeoutMs,
+      async (res) => ({ ok: res.ok, status: res.status, json: await res.json().catch(() => ({})) }),
+    );
+  }
+
+  /** True if the server answers /system_stats within 3 s. */
+  async ping(): Promise<boolean> {
+    try {
+      return await this.call("/system_stats", undefined, 3_000, async (res) => res.ok);
+    } catch {
+      return false;
+    }
+  }
+
   /** Server up, GGUF node present, model files installed. */
   async preflight(models: ModelNames): Promise<{ version: string }> {
     let stats: { system?: { comfyui_version?: string } };
     try {
-      const res = await this.request("/system_stats", undefined, 5_000);
-      if (!res.ok)
-        throw new ComfyError(`ComfyUI at ${this.baseUrl} answered HTTP ${res.status}`, START_HINT);
-      stats = (await res.json()) as typeof stats;
+      stats = await this.call("/system_stats", undefined, 5_000, async (res) => {
+        if (!res.ok) {
+          throw new ComfyError(
+            `ComfyUI at ${this.baseUrl} answered HTTP ${res.status}`,
+            START_HINT,
+          );
+        }
+        return (await res.json()) as typeof stats;
+      });
     } catch (err) {
       if (err instanceof ComfyError) throw err;
       throw new ComfyError(`ComfyUI at ${this.baseUrl} is not responding`, START_HINT);
@@ -167,16 +224,8 @@ export class ComfyClient {
 
   /** Queue the workflow and wait for its first image. Returns the PNG bytes. */
   async generate(workflow: ApiWorkflow, deadlineMs: number): Promise<Uint8Array> {
-    const res = await this.request("/prompt", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: workflow, client_id: this.clientId }),
-    });
-    const body = (await res.json().catch(() => ({}))) as {
-      prompt_id?: string;
-      error?: unknown;
-      node_errors?: unknown;
-    };
+    const res = await this.postJson("/prompt", { prompt: workflow, client_id: this.clientId });
+    const body = res.json as { prompt_id?: string; error?: unknown; node_errors?: unknown };
     if (!res.ok || !body.prompt_id) {
       throw new ComfyError(
         `ComfyUI rejected the workflow (HTTP ${res.status}): ${JSON.stringify(body.error ?? body).slice(0, 500)}` +
@@ -188,29 +237,19 @@ export class ComfyClient {
     const id = body.prompt_id;
     const start = this.deps.now();
     for (;;) {
-      const hist = await this.getJson<Record<string, HistoryItem>>(`/history/${id}`);
-      const item = hist[id];
+      const item = await this.historyItem(id);
       const status = item?.status;
       if (status?.status_str === "error") {
-        throw new ComfyError(
-          `generation failed: ${errorMessage(status)}`,
-          oomHint(errorMessage(status)),
-        );
+        const msg = errorMessage(status);
+        throw new ComfyError(`generation failed: ${msg}`, oomHint(msg));
       }
-      if (status?.completed) {
-        const img = Object.values(item!.outputs ?? {}).flatMap((o) => o.images ?? [])[0];
-        if (!img) throw new ComfyError("ComfyUI finished but returned no image");
-        const q = new URLSearchParams({
-          filename: img.filename,
-          subfolder: img.subfolder ?? "",
-          type: img.type ?? "output",
-        });
-        const view = await this.request(`/view?${q}`, undefined, 60_000);
-        if (!view.ok) throw new ComfyError(`could not download the image (HTTP ${view.status})`);
-        const bytes = new Uint8Array(await view.arrayBuffer());
-        if (!PNG_SIGNATURE.every((b, i) => bytes[i] === b))
-          throw new ComfyError("downloaded file is not a PNG");
-        return bytes;
+      if (status?.completed) return this.download(item!);
+      if (!item && !(await this.isQueued(id)) && !(await this.historyItem(id))) {
+        // Not running, not waiting, not finished: ComfyUI restarted or the queue was cleared.
+        throw new ComfyError(
+          "the job disappeared from ComfyUI (restarted, or the queue was cleared)",
+          START_HINT,
+        );
       }
       if (this.deps.now() - start > deadlineMs) {
         await this.interrupt(id);
@@ -223,38 +262,61 @@ export class ComfyClient {
     }
   }
 
-  /** Best effort: stop the running job and drop a queued one. */
+  private async historyItem(id: string): Promise<HistoryItem | undefined> {
+    return (await this.getJson<Record<string, HistoryItem>>(`/history/${id}`))[id];
+  }
+
+  private async isQueued(id: string): Promise<boolean> {
+    const q = await this.getJson<{ queue_running?: unknown[][]; queue_pending?: unknown[][] }>(
+      "/queue",
+    );
+    return [...(q.queue_running ?? []), ...(q.queue_pending ?? [])].some((e) => e?.[1] === id);
+  }
+
+  private async download(item: HistoryItem): Promise<Uint8Array> {
+    const img = Object.values(item.outputs ?? {}).flatMap((o) => o.images ?? [])[0];
+    if (!img) throw new ComfyError("ComfyUI finished but returned no image");
+    const q = new URLSearchParams({
+      filename: img.filename,
+      subfolder: img.subfolder ?? "",
+      type: img.type ?? "output",
+    });
+    const bytes = await this.call(`/view?${q}`, undefined, 60_000, async (view) => {
+      if (!view.ok) throw new ComfyError(`could not download the image (HTTP ${view.status})`);
+      return new Uint8Array(await view.arrayBuffer());
+    });
+    if (!PNG_SIGNATURE.every((b, i) => bytes[i] === b)) {
+      throw new ComfyError("downloaded file is not a PNG");
+    }
+    return bytes;
+  }
+
+  /** Best effort: stop this job (only this one, where the server supports it) and drop it from the queue. */
   async interrupt(promptId?: string): Promise<void> {
-    await this.request("/interrupt", { method: "POST" }, 5_000).catch(() => undefined);
+    await this.postJson("/interrupt", promptId ? { prompt_id: promptId } : {}, 5_000).catch(
+      () => undefined,
+    );
     if (promptId) {
-      await this.request(
-        "/queue",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ delete: [promptId] }),
-        },
-        5_000,
-      ).catch(() => undefined);
+      await this.postJson("/queue", { delete: [promptId] }, 5_000).catch(() => undefined);
     }
   }
 
   /** Unload models so local Whisper gets the VRAM. Best effort. */
   async free(): Promise<boolean> {
     try {
-      const res = await this.request(
-        "/free",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ unload_models: true, free_memory: true }),
-        },
-        5_000,
-      );
-      return res.ok;
+      return (await this.postJson("/free", { unload_models: true, free_memory: true }, 5_000)).ok;
     } catch {
       return false;
     }
+  }
+}
+
+class HttpError extends ComfyError {
+  constructor(
+    path: string,
+    readonly status: number,
+  ) {
+    super(`GET ${path} → HTTP ${status}`);
   }
 }
 
@@ -268,6 +330,8 @@ interface HistoryItem {
 
 function errorMessage(status: NonNullable<HistoryItem["status"]>): string {
   for (const m of status.messages ?? []) {
+    if (Array.isArray(m) && m[0] === "execution_interrupted")
+      return "the job was interrupted in ComfyUI";
     if (Array.isArray(m) && m[0] === "execution_error") {
       const d = m[1] as { exception_message?: string; node_type?: string };
       return `${d.node_type ?? "node"}: ${(d.exception_message ?? "").trim()}`;

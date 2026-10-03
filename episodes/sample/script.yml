@@ -52,8 +52,8 @@ beats:
   - narration: |
       So he picked up a book. A thick one.
     scene:
-      image: "Poseidon sits at a cluttered desk reading a thick paperback novel, eyebrows raised in disbelief; setting: a gloomy underwater cave office with a round porthole"
-      seed: 3790799677
+      image: "Poseidon sits at a cluttered desk reading a thick paperback novel, eyebrows raised in disbelief; setting: a cozy underwater cave office with a round porthole"
+      seed: 3790799679
       cast: [poseidon]
       caption: "Self-improvement, god edition."
     tags: [ZOOM]
@@ -61,5 +61,5 @@ beats:
   - narration: |
       And in the book, there was a spray can that fixes reality.
     scene:
-      image: "a single dusty aerosol spray can standing alone on an empty shelf, glowing faintly; setting: a dim, run-down 1970s convenience store"
+      image: "a single dusty aerosol spray can standing alone on an empty shelf, glowing faintly; setting: a run-down 1970s convenience store"
       caption: "Safe when used as directed."

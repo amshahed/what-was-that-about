@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   authorKey,
+  candidateSeeds,
+  currentCandidates,
   composePrompt,
   deriveSeed,
   estimateTokens,
@@ -208,5 +210,60 @@ describe("parseBeatList", () => {
   });
   it.each(["a", "5-2", "1,,x"])("rejects %s", (spec) => {
     expect(() => parseBeatList(spec)).toThrow();
+  });
+});
+
+describe("re-roll rounds", () => {
+  const entry = (seed: number, extra: object = {}) => ({
+    beat: 3,
+    image: "img",
+    cast: [],
+    seed,
+    seedSource: "derived" as const,
+    renderKey: "",
+    prompt: "p",
+    width: 1344,
+    height: 768,
+    ...extra,
+  });
+
+  it("starts after the highest seed tried, so a second round gives new images", () => {
+    const manifest = {
+      version: 1 as const,
+      episode: "ep",
+      beats: {
+        a: entry(10),
+        b: entry(11, { candidateFor: 3, candidateNo: 1 }),
+        c: entry(13, { candidateFor: 3, candidateNo: 3 }),
+        other: { ...entry(99), beat: 4 },
+      },
+    };
+    expect(candidateSeeds(manifest, 3, "img", 10, 3)).toEqual([14, 15, 16]);
+    expect(candidateSeeds({ version: 1, episode: "ep", beats: {} }, 3, "img", 10, 2)).toEqual([
+      11, 12,
+    ]);
+  });
+
+  it("lists only the current round's candidates for the beat and image", () => {
+    const manifest = {
+      version: 1 as const,
+      episode: "ep",
+      beats: {
+        a: entry(1),
+        b: entry(2, { candidateFor: 3, candidateNo: 1 }),
+        c: { ...entry(3, { candidateFor: 3, candidateNo: 2 }), image: "old" },
+      },
+    };
+    expect(currentCandidates(manifest, 3, "img").map((e) => e.seed)).toEqual([2]);
+  });
+});
+
+describe("caption space", () => {
+  it("is added only for beats with a caption", () => {
+    const style = { ...STYLE, captionSpace: "Keep the top clear." };
+    expect(composePrompt(style, [], "x", { caption: true })).toBe(
+      "Cartoon panel. x. No text. Keep the top clear.",
+    );
+    expect(composePrompt(style, [], "x")).toBe("Cartoon panel. x. No text.");
   });
 });

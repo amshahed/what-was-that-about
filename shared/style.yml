@@ -7,8 +7,12 @@ prefix: >-
   Cartoon webcomic panel in the style of Cyanide and Happiness and Crayon Capital: thick clean black
   outlines, flat bright colors, minimal shading, simple shapes, wide 16:9 composition.
 suffix: >-
-  Simple uncluttered background with a few large flat shapes, main subject in the center of the frame.
-  Unsigned artwork, clean empty corners, no text, no lettering.
+  Bright, evenly lit scene with cheerful saturated colors. Simple uncluttered background with a few
+  large flat shapes, main subject in the center of the frame. Unsigned artwork, clean empty corners,
+  no text, no lettering, no writing on walls or objects.
+# Added only for beats with a `caption:` (the caption bar sits at the top of the frame).
+captionSpace: >-
+  Keep the top fifth of the frame as plain empty background, with no heads or important objects there.
 width: 1344
 height: 768
 steps: 20

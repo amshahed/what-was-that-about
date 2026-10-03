@@ -73,7 +73,7 @@ Cast block: 1 character → its `description`; 2–3 → "On the left: A, short.
 
 Flags: `--only 2,5-7`, `--force`, `--dry-run` (plan + prompts, no ComfyUI; works on the Mac / CI),
 `--prune` (delete orphan PNGs), `--reroll 7,12` (3 candidates per beat, seeds +1…+3, saved as
-`scenes/candidates/…`), `--pick 7=2` (writes candidate 2's seed into `script.yml` via the `yaml`
+`scenes/` like any still), `--pick 7=2` (writes candidate 2's seed into `script.yml` via the `yaml`
 Document API, keeps comments).
 Progress: `[12/40] beat 17 · seed 18822 · 54s · ETA 25m`.
 
@@ -86,7 +86,7 @@ and candidate strips after `--reroll`.
 - `BeatEntry.scene: BeatScene`; `BeatEntry.still?: string` (a `staticFile` name).
 - New `BeatVisual`: kit → `SceneCanvas`; image → `<Img>` (waits for load) with `objectFit: cover` and
   1.04× overscan (trims corner marks), then the kit caption on top. `ZoomedScene` wraps any child.
-- `scripts/lib/scene-stills.ts`: `stageStills()` before `bundle()` — missing stills exit 2 with the list
+- `scripts/lib/scene-assets.ts`: `stageStills()` before `bundle()` — missing stills exit 2 with the list
   and the exact `generate-scenes --only …` command; stale stills warn. `short` checks only its range.
 - `render-script.ts` skips image beats with a log line.
 
@@ -137,3 +137,33 @@ LoRA (V3), IP-Adapter / ControlNet (V4), upscaling, loudness normalization, port
 - `align` asked ComfyUI to unload its models first.
 - Known message: Remotion sometimes logs "Target closed" at browser shutdown; the file is complete
   and the exit code is 0.
+
+## Review round 1 (technical + functional) — fixes
+
+- **Re-roll / pick (blocker):** each `--reroll` round starts after the highest seed tried for the beat
+  (no repeat images) and clears the previous round's candidate markers; `--pick` takes the current
+  round and marks the take as pinned in the manifest. Logic in `candidateSeeds` / `currentCandidates`
+  (tested).
+- **ComfyUI client:** the timeout covers the response body (no hang on a stalled download); GETs retry
+  only on network/5xx errors; a job that disappears (ComfyUI restarted) fails at once via `/queue`;
+  `/interrupt` names the job; "interrupted in ComfyUI" is reported.
+- **Look:** style suffix asks for a bright, evenly lit scene and no writing on objects; beats with a
+  caption add "keep the top fifth plain" (`captionSpace`); sample prompts lost "gloomy"/"dim"; the kit
+  caption bar is smaller (y 24–104) and SCRIPT.md says to keep that band clear.
+- **UX:** forgetting `--` before options stops with a hint (npm used to swallow them; `--dry-run` once
+  became a real run); ComfyUI starts by itself when it should run on this PC; the review page has
+  full-size links, captions, a "kept" badge and copy-ready `--pick` lines; `--dry-run` shows every
+  planned prompt and the unused files; `--keep-loaded`; `--prune` also drops manifest entries without a
+  file; `assemble`/`short` print script errors without a stack trace.
+- **Hash:** the workflow hash uses the parsed JSON, so reformatting the file does not mark stills stale.
+- Docs: PRD (three caption tiers, Phase 0.5 done, 1344×768), workflow (align unloads ComfyUI; `--`;
+  no dark lighting words; auto-start).
+
+## Verification after round 1 (GPU desktop)
+
+- Second `--reroll 3` gave new seeds (…679–681); `--pick 3=1` pinned …679 (the current round).
+- With ComfyUI stopped, `generate-scenes sample` started it in a new window, waited, generated both
+  stills (bright look) and unloaded the models.
+- `npm run generate-scenes sample --dry-run` (no `--`) stops with the hint; an out-of-range beat errors.
+- `align` → `assemble` (22.3 s): captions at the top no longer cover the characters.
+- A missing still: `assemble` exits 2 with `Run: npm run generate-scenes sample -- --only 4`.
