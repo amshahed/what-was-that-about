@@ -1,0 +1,15 @@
+# Extra packages for the custom nodes, installed into ComfyUI's embedded Python.
+# Pin only what the nodes add. Torch, transformers and the rest ship with the portable build; do not pin them here.
+
+# ComfyUI-GGUF
+gguf==0.19.0
+protobuf==7.36.2
+
+# ComfyUI-Manager
+GitPython==3.1.62
+PyGithub==2.10.0
+matrix-nio==0.26.0
+toml==0.10.2
+uv==0.12.19
+chardet==7.6.0
+nh3==0.3.7

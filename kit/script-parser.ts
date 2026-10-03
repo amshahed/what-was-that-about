@@ -19,7 +19,7 @@ export class ScriptParseError extends Error {
   }
 }
 
-const TONES: readonly Tone[] = ["light", "balanced", "heavy", "balanced-heavy"] as const;
+const TONES: readonly Tone[] = ["light", "balanced", "heavy"] as const;
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);

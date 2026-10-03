@@ -38,17 +38,16 @@ Read: yes / partial
      This is what separates us from a Wikipedia summary. Be specific. -->
 
 ## Tone tag
-<!-- Pick one: light | balanced | heavy | balanced-heavy
-     light          → 4–6 min, high joke density, snappy pace, audience already knows the book
-     balanced       → 6–10 min, mix of laughs and genuine insight, works for most books
-     heavy          → 10–15 min, longer analysis, heavier material (philosophy, dark themes)
-     balanced-heavy → 8–12 min, dense material but keep it funny
-     Default: balanced -->
+<!-- Pick one: light | balanced | heavy  (PRD §6.1)
+     light    → 4–6 min,  ~40:60 substance:entertainment — pulpy, comedic, fun reads
+     balanced → 4–8 min,  ~55:45 — most fiction (default)
+     heavy    → 8–10 min, ~70:30 — philosophical, somber, dense; humor sprinkled, never flippant
+     Also a scheduling lever: read it recently / lots to say → heavy; read it ages ago → light. -->
 tone: balanced
 
 ## Runtime target
-<!-- Rough narration target follows from tone:
-     light: 600–900 words | balanced: 900–1400 | heavy: 1400–2100 | balanced-heavy: 1100–1700 -->
+<!-- Rough narration target follows from tone (~150 words/min):
+     light: 600–900 words | balanced: 700–1200 | heavy: 1200–1500 -->
 
 ## Key jokes / gags
 <!-- 3–5 concrete bits you definitely want to include. Vague intentions get cut. -->
@@ -86,7 +85,7 @@ Status: ⏳ pending
 
 <!-- Change to "Status: ✅ approved" ONLY after every claim below is verified.
      The render pipeline BLOCKS on this line — assemble and short will not run without it.
-     See docs/episode-workflow.md §3a for the fact-check protocol. -->
+     See docs/episode-workflow.md, Stage 3b, for the fact-check protocol. -->
 
 ## Checks
 
@@ -104,11 +103,15 @@ function scriptStub(slug: string): string {
 # See kit/SCRIPT.md for the full tag grammar and component catalogue.
 # Run \`npm run align <slug>\` after recording narration.
 # Run \`npm run assemble <slug>\` to render the rough cut.
+#
+# Sections (PRD §6.4): cold-open → spoiler-warn-and-setup → recap → analysis → verdict.
+# Mark them with YAML comments like the one below; the parser does not read [SECTION] tags yet.
 
 id: ${slug}
 tone: balanced
 
 beats:
+  # --- SECTION: cold-open ---
   - narration: |
       <!-- First line of narration. Hook the viewer in the first sentence. -->
     scene:

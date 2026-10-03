@@ -1,143 +1,218 @@
 # Per-episode workflow
 
-This is the standard loop for producing one video. The pipeline enforces the fact-check gate;
-everything else is creative work done before running any commands.
+The standard loop for one video. Stage numbers match the pipeline table in
+[PRD §7](../PRD.md#7-the-production-pipeline-the-system). **C** = Claude, **U** = User.
+
+The pipeline enforces one gate: assembly and Shorts do not run until the fact-check is approved.
+
+| Stage                  | Owner | Output                                       |
+| ---------------------- | ----- | -------------------------------------------- |
+| 0 Book + tone tag      | U     | `seed.md` tone line                          |
+| 1 Seed / brain-dump    | U     | `seed.md`                                    |
+| 2 Research             | C     | `notes/research.md`                          |
+| 3 Script (EDL)         | C     | `script.yml`                                 |
+| 3b Fact-check gate ⛔  | U     | `notes/factcheck.md` → `Status: ✅ approved` |
+| 4 Scene images         | C + U | `scenes/*.png` _(planned: slice V2)_         |
+| 5 Narration            | U     | `audio/narration.wav`                        |
+| 6 Alignment + assembly | C + U | `out/alignment.json`, `out/roughcut.mp4`     |
+| 7 Shorts               | C + U | `out/short-*.mp4`                            |
+| 8 Publish              | U     | YouTube upload                               |
 
 ---
 
 ## Stage 0 — Book selection + tone tag
 
-Run:
 ```
 npm run new-episode <book-slug>
 ```
 
-Fill in `episodes/<slug>/seed.md`:
-- **Angle** — your specific take, not a Wikipedia summary. One strong paragraph.
-- **Tone tag** — determines runtime, joke density, and music bed:
+The slug is kebab-case and has no number (`ubik`, not `01-ubik`). The command creates
+`seed.md`, `script.yml`, `notes/research.md` and `notes/factcheck.md`.
 
-| Tag | Runtime | Joke density | When to use |
-|-----|---------|-------------|-------------|
-| `light` | 4–6 min | High — every beat has a gag | Audience already knows the book; lean into comedy |
-| `balanced` | 6–10 min | Mixed — laughs + insight | Most books; default choice |
-| `heavy` | 10–15 min | Lower — analysis-first | Dense philosophy, dark themes, books that need unpacking |
-| `balanced-heavy` | 8–12 min | Medium | Weighty material but still funny; think *Blood Meridian* |
+Set the tone tag in `seed.md` and `script.yml` ([PRD §6.1](../PRD.md#61-tone-system-adaptive-per-book)):
 
-**Heuristic:** Start with `balanced`. Upgrade to `heavy` only if the book's main value is dense
-ideas (not just dark tone). Downgrade to `light` only if the book is thin and the gags carry it.
+| Tag        | Runtime  | Substance : entertainment | Use for                                                       |
+| ---------- | -------- | ------------------------- | ------------------------------------------------------------- |
+| `light`    | 4–6 min  | ~40 : 60                  | Pulpy thrillers, comedic, fun reads                           |
+| `balanced` | 4–8 min  | ~55 : 45                  | Most fiction (default)                                        |
+| `heavy`    | 8–10 min | ~70 : 30                  | Philosophical, somber, dense. Humor sprinkled, never flippant |
 
----
-
-## Stage 1 — Research
-
-Fill in `episodes/<slug>/notes/research.md`:
-- List every factual claim you plan to make in the script.
-- Find a source for each one. Move verified claims to the "Verified" section.
-- Park tangents in "Cut ideas" — don't let them bloat the script.
+The tag is also a scheduling lever. Read it recently and have lots to say → `heavy`. Read it ages
+ago, or it was just fun → `light`. The narrator voice stays the same for every tag.
 
 ---
 
-## Stage 2 — Script draft (Edit Decision List)
+## Stage 1 — Seed / brain-dump
 
-Edit `episodes/<slug>/script.yml`. The format is an EDL: each beat is one visual shot
-with narration text and optional tags.
+Fill in `seed.md`: your angle (one strong paragraph), the gags you want and what to cut.
+Dump your take — the bits that struck you and anything that must be in the video.
 
-### Tag grammar
+---
+
+## Stage 2 — Research
+
+Claude researches (own knowledge + a web pass) and writes `notes/research.md`:
+claims to verify, verified facts with sources, cut ideas and sources. Claude synthesizes and
+never copies. You review the angle; you do not do the research.
+
+---
+
+## Stage 3 — Script draft (Edit Decision List)
+
+Claude drafts `script.yml` in the channel voice. Each beat is one shot: narration, one image and
+optional tags. Full schema: [`kit/SCRIPT.md`](../kit/SCRIPT.md).
+
+### Sections
+
+Use the 5-section template ([PRD §6.4](../PRD.md#64-episode-template-the-repeatable-skeleton)):
+
+| Section                  | Purpose                                                             |
+| ------------------------ | ------------------------------------------------------------------- |
+| `cold-open`              | Spoiler-free hook: is this book worth your time? Source for Shorts. |
+| `spoiler-warn-and-setup` | Branded spoiler warning + premise, vibe, "what you're in for".      |
+| `recap`                  | The plot, compressed, with gags.                                    |
+| `analysis`               | Themes + ending explained. The substance and the payoff.            |
+| `verdict`                | Honest personal take + sign-off.                                    |
+
+The parser does not read `[SECTION]` tags yet. Mark each section with a YAML comment:
+`# --- SECTION: recap ---`.
+
+### Tags
 
 ```yaml
-tags: [HOLD]                   # linger on this shot (no visual cut)
-tags: [ZOOM]                   # Ken Burns punch-in (1.0→1.05 scale over beat duration)
-tags: ["SFX:record scratch"]   # drop a comedic sting at this beat's start
+tags: [HOLD]                   # linger on this shot
+tags: [ZOOM]                   # Ken Burns punch-in over the beat
+tags: ["SFX:record scratch"]   # comedic sting at the beat's start
 tags: [HOLD, ZOOM]             # combine freely
 ```
 
-Available SFX names (see `shared/assets.md` for files):
-`record scratch` · `boing` · `ding` · `whoosh` · `drum hit`
+SFX names: `record scratch` · `boing` · `ding` · `whoosh` · `drum hit`. Case does not matter, and
+`-` or `_` count as spaces (`record-scratch` works). Files: [`shared/assets.md`](../shared/assets.md).
 
-### Script structure (the §6.4 arc)
+**One idea per beat.** If a beat needs two ideas, split it into two beats.
 
-| Section | Beat count (balanced) | Purpose |
-|---------|----------------------|---------|
-| Hook | 1–2 | Cold open — what is this book and why should I care? |
-| Setup | 3–5 | Context, world-building, character intro |
-| Body | 6–12 | Main argument / summary, interlaced with analysis |
-| Twist/Analysis | 2–4 | Your actual take — the thing a Wikipedia article won't say |
-| Outro | 1–2 | Callback to the hook, rating, CTA |
+### The image for each beat
 
-**One idea per beat.** If a beat needs two sentences, split it into two beats.
+Each beat has one picture. Pick one of two kinds:
+
+- **AI still (default after slice V2)** — a short image prompt and the cast list:
+  ```yaml
+  scene:
+    image: "Poseidon facepalming at a desk buried in paperwork"
+    cast: [poseidon] # adds the locked character description from shared/characters/
+    seed: 2041 # optional — pin it to keep a take you like
+    caption: "Still can't escape the 9 to 5."
+  ```
+  Describe the action, expression and setting. Do not describe the character's look — the
+  character file holds it. The style prompt is fixed, so do not add style words.
+- **Code-kit scene** — for text-hero beats (a giant word, number or `?`) and diagrams. Image
+  models draw text badly, so text stays code-rendered. See [`kit/README.md`](../kit/README.md).
+
+Until V2 ships, every beat uses code-kit `layers` (the parser rejects `image:`).
 
 ### Keeping it funny
 
 - Lead with the straight reading, then subvert it in the same beat.
-- Use `[ZOOM]` on the setup and `[SFX:record scratch]` on the subversion.
-- If a beat has no gag, it had better be doing essential setup work.
+- Use `ZOOM` on the setup and an `SFX` tag on the subversion.
+- If a beat has no gag, it must do essential setup work.
 
 ---
 
-## Stage 3a — Fact-check gate ⛔
+## Stage 3b — Fact-check gate ⛔
 
-**The render pipeline will not run without this step.**
+**Assembly and Shorts do not run without this step.** You read the book, so you check it.
 
-Open `episodes/<slug>/notes/factcheck.md` and work through the checklist:
-1. Every claim from the script must appear in the table with a source.
+1. Open `notes/factcheck.md`. Every claim from the script goes in the table with a verdict and a source.
 2. When all checks pass, change the status line to:
    ```
    Status: ✅ approved
    ```
-3. Save. The `assemble` and `short` commands check this file before touching Remotion.
+3. Save. `assemble` and `short` check this line before they render.
 
 ---
 
-## Stage 3b — Narration recording
+## Stage 4 — Scene images _(planned: slice V2)_
 
-Record narration to `episodes/<slug>/audio/narration.wav`:
-- Format: WAV mono, 44.1kHz, 16-bit.
-- Levels: peak −6 to −3 dBFS (leaves headroom for the music bed).
+Start ComfyUI first: `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
+
+```
+npm run generate-scenes <slug>
+```
+
+Sends each AI-still beat to the local ComfyUI (Flux) and writes one PNG per beat to
+`scenes/`. About 45–60 s per image. A re-run regenerates only the beats whose prompt, cast or
+seed changed. From the Mac, set `COMFY_URL=http://192.168.0.102:8188`.
+
+Review the stills. For a bad image, change the prompt or the seed, then run the command again.
+
+---
+
+## Stage 5 — Narration recording
+
+Record the approved script to `audio/narration.wav`, in one take (inline retakes are fine):
+
+- Format: WAV mono, 44.1 kHz, 16-bit.
+- Levels: peak −6 to −3 dBFS (headroom for the music bed). The mix is normalized to −14 LUFS.
 - Delivery: conversational, not broadcast. Dry signal — no reverb, no noise gate.
 
 ---
 
-## Stage 4 — Forced alignment
+## Stage 6 — Alignment + assembly
+
+### Alignment
 
 ```
 npm run align <slug>
 ```
 
-Reads `audio/narration.wav`, calls Whisper, writes `out/alignment.json`.
-Requires `OPENAI_API_KEY` environment variable.
+Reads `audio/narration.wav`, runs Whisper and writes `out/alignment.json` (word timestamps).
 
----
+- **Now:** calls the OpenAI Whisper API. Requires the `OPENAI_API_KEY` environment variable.
+- **After slice V1:** runs local faster-whisper from `.whisper-env/` on the GPU. No key, no
+  cost. Set up once with `tools\whisper\setup.ps1`. The OpenAI API stays as a fallback.
+- Do not run it while ComfyUI generates images — both need the 10 GB of VRAM.
 
-## Stage 5 — Assembly (rough cut)
+### Assembly (rough cut)
 
 ```
 npm run assemble <slug>
 ```
 
 Requires:
+
 - `notes/factcheck.md` with `Status: ✅ approved`
 - `script.yml`
 - `out/alignment.json`
 - `audio/narration.wav`
-- (optional) `shared/music/<tone>.mp3` and `shared/sfx/*.wav` — see `shared/assets.md`
+- `scenes/*.png` for the AI-still beats _(after V2)_
+- (optional) music and SFX files in `shared/` — see `shared/assets.md`. Missing files only warn.
 
-Writes: `out/roughcut.mp4`
+Writes `out/roughcut.mp4` (16:9, Ken Burns, line-pop captions, music, SFX).
 
-Do a **light polish pass**: check comedic timing on key beats. If a beat is noticeably early or
-late, adjust the `narration:` text (extra words shift the Whisper anchor) or trim the audio.
+Do a **light polish pass** on comedic timing only. If a beat is early or late, adjust the
+`narration:` text (extra words shift the Whisper anchor) or trim the audio.
 
 ---
 
-## Stage 6 — Shorts (optional)
+## Stage 7 — Shorts
+
+**Pipeline A (per episode):** Claude proposes 1–3 cuts (the cold open, a sharp mid-video bit, or a
+hook). You pick. Then render each one:
 
 ```
-npm run short <slug> <start-beat-index> <end-beat-index>
+npm run short <slug> <start-beat> <end-beat>
 ```
 
-Pick a 30–60 second range (check frame counts: 30fps × 60s = 1800 frames). 
-Writes: `out/short-<start>-<end>.mp4`
+Beat indices are 0-based and inclusive. Aim for 30–60 s. Writes `out/short-<start>-<end>.mp4` (9:16).
 
-Run multiple times with different ranges to produce multiple Shorts from one episode.
+**Pipeline B (standalone, `shorts/<id>/` at repo root):** not built yet. `npm run short` accepts
+a directory path, so a standalone Short with the same file layout can render the same way.
+
+---
+
+## Stage 8 — Publish
+
+Title, thumbnail, description and tags, upload, schedule. Credit CC BY music in the description.
 
 ---
 
@@ -147,11 +222,13 @@ Run multiple times with different ranges to produce multiple Shorts from one epi
 episodes/<slug>/
   seed.md              — angle + tone tag (creative brief)
   script.yml           — EDL script (source of truth for beats)
+  notes/
+    research.md        — research + claims to verify
+    factcheck.md       — render gate (must reach "Status: ✅ approved")
+  scenes/
+    <beat>.png         — generated stills (gitignored; reproducible from prompt + seed)
   audio/
     narration.wav      — recorded narration (gitignored)
-  notes/
-    research.md        — claim verification
-    factcheck.md       — render gate (must reach "Status: ✅ approved")
   out/
     alignment.json     — Whisper word timestamps
     roughcut.mp4       — 16:9 full episode (gitignored)

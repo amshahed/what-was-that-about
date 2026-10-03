@@ -1,7 +1,7 @@
-# PRD — "Read It So You Don't Have To" (working title)
+# PRD — "What Was That About" (working title)
 ### A funny/casual book summary & analysis YouTube channel, powered by a code-driven production pipeline
 
-> One-liner: **The book-analysis channel for people who actually read the book** — genuinely satisfying "ending explained" + analysis, delivered in a dry, funny, stick-figure style, produced through a near-automated pipeline so each episode is low-effort to make.
+> One-liner: **The book-analysis channel for people who actually read the book** — genuinely satisfying "ending explained" + analysis, delivered in a dry, funny cartoon style, produced through a near-automated pipeline so each episode is low-effort to make.
 
 ---
 
@@ -13,7 +13,7 @@ There's a gap: **smart, genuinely-entertaining analysis of books, by someone who
 
 ## 2. Vision
 
-A channel where the user — a self-described funny guy who reads — picks books he's actually read, brings his own take, and (with Claude as co-producer) turns it into a tight, funny, visually-engaging analysis video in the spirit of *Casually Explained* / *Sam O'Nella*: crude hand-drawn stick figures, recurring-character gags, meme energy, dry narration. The defining constraint: it must run as a **smooth, repeatable pipeline**, because high per-video effort = the user quits.
+A channel where the user — a self-described funny guy who reads — picks books he's actually read, brings his own take, and (with Claude as co-producer) turns it into a tight, funny, visually-engaging analysis video in the spirit of *Crayon Capital* / *Clever Crack* / *Cyanide & Happiness*: expressive cartoon characters with real bodies and varied poses, recurring-character gags, meme energy, dry narration. The defining constraint: it must run as a **smooth, repeatable pipeline**, because high per-video effort = the user quits.
 
 ## 3. Goals & non-goals
 
@@ -37,16 +37,18 @@ People who **have read the book** (or are reading it / don't mind spoilers) and 
 
 > "Finally, a book analysis that's actually *good* **and** actually *funny* — from someone who read the thing."
 
-- vs. content farms: real opinions, real voice, real analysis, original art (not stock footage + TTS).
+- vs. content farms: real opinions, real voice, real analysis, original art in one house style (not stock footage + TTS).
 - vs. boring lecture channels: dry humor, visual gags, tight pacing, meme literacy.
-- The moat is the **combination**: substance + comedy + a consistent hand-drawn world with recurring characters. Each is copyable; together they're a brand.
+- The moat is the **combination**: substance + comedy + a consistent cartoon world with recurring characters. Each is copyable; together they're a brand.
 
 ## 6. Content design
 
 ### 6.0 Visual storytelling principle (load-bearing)
-**The images carry the message.** The narrator's voice and the picture on screen work together to land *every* point — humor, opinion, contrast, important note, emphasis, whatever. The visual vocabulary is therefore **unbounded**: not locked to stick-figure scenes. A beat's image can be a scene, a giant pull-quote, a graph, an arrow-and-pointer diagram, a single huge question mark, a bold number filling the frame — whatever best supports what the voice is saying. The Rough.js house style is the *aesthetic* (hand-wobbled, drawn-in-MS-Paint feel); it is **not** a restriction on *what* can be on screen.
+**The images carry the message.** The narrator's voice and the picture on screen work together to land *every* point — humor, opinion, contrast, important note, emphasis, whatever. The visual vocabulary is therefore **unbounded**: not locked to character scenes. A beat's image can be a scene, a giant pull-quote, a graph, an arrow-and-pointer diagram, a single huge question mark, a bold number filling the frame — whatever best supports what the voice is saying. The cartoon house style (thick clean outlines, flat bright colors, simple shapes — see §8.1) is the *aesthetic*; it is **not** a restriction on *what* can be on screen.
 
-**Casting doctrine: cast existing first, custom last.** When a beat needs a character, the default is to **reuse an existing actor** (recurring narrator/mascot, recurring per-book figures already in the kit). Only introduce a new custom character when the beat genuinely requires it. Reusable cast is what makes recurring-character gags possible and is a major component of channel identity — every custom character we add dilutes that, so the bar is high.
+> **Changed 2026-09-26:** the original visuals were code-drawn SVG stick figures (Rough.js). They looked too primitive. Character and scene images are now **AI-generated stills, made locally** (§8.1). Text-heavy beats stay code-rendered, because image models draw text badly.
+
+**Casting doctrine: cast existing first, custom last.** When a beat needs a character, the default is to **reuse an existing actor** (recurring narrator/mascot such as Poseidon, recurring per-book figures that already have a character file). Only introduce a new custom character when the beat genuinely requires it. Reusable cast is what makes recurring-character gags possible and is a major component of channel identity — every custom character we add dilutes that, so the bar is high.
 
 ### 6.1 Tone system (adaptive, per book)
 Every book gets a **tone tag** in pre-production that sets joke density, runtime, and visual-gag frequency:
@@ -82,6 +84,8 @@ A **tag-based 5-section template**. Each section is delimited in the script with
 
 Sections compose with the EDL tags (`[HOLD]`, `[ZOOM]`, `[SFX]`) inside them — sections are coarse seams; EDL tags are fine-grained per-beat instructions (see §8.2).
 
+> **Status:** the parser does not read section markers yet. Until it does, scripts mark sections with YAML comments (`# --- SECTION: recap ---`) and Shorts cuts are picked by beat index.
+
 ### 6.5 Summary vs. analysis: one integrated video per book
 **Default: one video per book that integrates summary + analysis** (the §6.4 arc). The recap is the setup that *earns* the analysis — splitting them creates redundant re-summarizing (you can't explain an ending without restating it), so integrating is strictly more efficient. Depth flexes via the tone tag (§6.1), not via a separate format.
 
@@ -98,53 +102,57 @@ Stages flow **seed → research → script → visuals → audio → assembly �
 | 0 | **Book selection** | U | Pick a book the user has read. Assign tone tag. |
 | 1 | **Seed / brain-dump** | U | User dumps his take: summary, hot-takes, the bits that struck him, anything that *must* be in there. |
 | 2 | **Research & synthesis** | C | Claude combines own knowledge + a web research pass (Wikipedia, study guides, essays, Reddit, YouTube) to map the "landscape take" and spot angles others missed. Synthesizes — never copies. |
-| 3 | **Script draft** | C | Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. |
+| 3 | **Script draft** | C | Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. Each beat gets an **image prompt** and its cast list. |
 | 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file contains `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
-| 4 | **Visual generation** | C | Compose each beat from the code component kit → render to PNG (see §8). |
+| 4 | **Visual generation** | C + U | `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat. Text-hero beats render from the code kit. User reviews the stills; Claude re-rolls the ones that miss (new seed or new prompt). See §8.1. |
 | 5 | **Audio recording** | U | User records himself reading the approved script. **Audio contract:** WAV, mono, 44.1 kHz, 16-bit, peak in `-6` to `-3` dBFS, quiet room (see §8.3). |
-| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**OpenAI Whisper API** — locked engine, see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX, audio normalized to -14 LUFS). User does a **light polish** pass only on comedic-timing beats. |
+| 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX, audio normalized to -14 LUFS). User does a **light polish** pass only on comedic-timing beats. |
 | 7 | **Shorts** | C + U | **Two pipelines** — see §7.7. **(A) Auto-suggested:** post-long-form, Claude proposes 1–3 candidate cuts (intro hook, mid-video bit, etc.) from the cold-open and tagged beats; user picks. **(B) Custom:** standalone Shorts authored at repo root `shorts/<id>/` — can slice from anywhere across episodes, with their own music/voice; lighter-weight pipeline. |
 | 8 | **Publish** | U | Title, thumbnail, description/tags, upload, schedule. |
 
 ### 7.7 Shorts — two pipelines
 Discovery is the point of Shorts, so we run two parallel tracks rather than over-constraining one:
 
-- **Pipeline A — auto-suggested (per episode).** After the long-form is locked, Claude scans the script + the rendered cut and proposes **1–3 candidate Shorts** keyed off what the episode actually delivered: an intro-hook cut (the cold open verbatim), a mid-video bit (a sharp gag or contrast moment), or an enticing-hook cut (a curiosity opener stitched from later beats). User picks one or more; Claude renders. Lives under `episodes/<slug>/shorts/`.
-- **Pipeline B — custom Shorts (standalone).** Authored at repo root `shorts/<id>/` (own seed/script/audio/out). Can slice from multiple episodes, can be a riff that isn't in any long-form, and can have its own music/voice/cast. Lighter-weight, faster to ship, and the channel's signal-boost vehicle between long-form drops.
+- **Pipeline A — auto-suggested (per episode).** After the long-form is locked, Claude scans the script + the rendered cut and proposes **1–3 candidate Shorts** keyed off what the episode actually delivered: an intro-hook cut (the cold open verbatim), a mid-video bit (a sharp gag or contrast moment), or an enticing-hook cut (a curiosity opener stitched from later beats). User picks one or more; Claude renders. Lives under `episodes/<slug>/shorts/`. *Built:* `npm run short <slug> <start-beat> <end-beat>` renders a chosen beat range to 9:16 (output currently in `episodes/<slug>/out/`); the automatic proposal is Claude's job, not code.
+- **Pipeline B — custom Shorts (standalone).** Authored at repo root `shorts/<id>/` (own seed/script/audio/out). Can slice from multiple episodes, can be a riff that isn't in any long-form, and can have its own music/voice/cast. Lighter-weight, faster to ship, and the channel's signal-boost vehicle between long-form drops. *Not built yet.*
 
-Both pipelines share the component kit and renderer; the difference is *authoring shape*, not infrastructure.
+Both pipelines share the image generator, the character files and the renderer; the difference is *authoring shape*, not infrastructure.
 
 ## 8. Technical architecture (the software to build)
 
-The visual + assembly layers are **real code living in this workspace** (`/Users/sh/workspace/what-was-that-about`). This is what makes the pipeline repeatable and pushes the user's effort toward zero.
+The visual + assembly layers are **real code living in this repo** (GitHub: `amshahed/what-was-that-about`). This is what makes the pipeline repeatable and pushes the user's effort toward zero.
 
-### 8.1 Visual component kit
-- **Substrate:** code-defined SVG components, not a Canva library.
-- **Aesthetic:** rendered with **Rough.js** so output looks hand-wobbled / "drawn in MS Paint," not sterile-vector. This *is* the brand look.
-- **Library structure:**
-  - **Actors** — stick-figure characters with swappable **pose** + **expression** variants. Recurring characters (e.g. a narrator/mascot, per-book figures like "office Poseidon") are defined once and reused → recurring-character gags actually work.
-  - **Props** — trident, tie, desk, coffee, etc.
-  - **Backgrounds** — ocean cave, corporate office, void, etc.
-  - **Meme templates** — meme *formats* redrawn in house style as reusable components (see §10).
-- **Composition:** each script beat → a small scene composition (actor + pose + props + background + caption) that Claude emits from the script and renders to PNG.
+**Where it runs:** the **Windows GPU desktop** (RTX 3080, 10 GB VRAM, 32 GB RAM) runs the whole pipeline: image generation, alignment and rendering. A Mac checkout can author scripts and call the desktop's ComfyUI over the LAN (§8.6).
+
+### 8.1 Visual generation — local AI stills (locked 2026-09-26)
+- **Stills, not animation.** No lip sync, no talking, no movement. Motion comes from Remotion (Ken Burns, cuts).
+- **Engine:** **ComfyUI** (Windows portable build) running **Flux.1 Dev, GGUF Q5_K_S** quant (fits 10 GB VRAM), with T5-XXL fp8 + CLIP-L text encoders and the Flux VAE. About 45–60 s per 1024×1024 image.
+- **Local, not a cloud API:** zero per-image cost, full control, privacy.
+- **Aesthetic:** cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack): thick clean black outlines, flat bright colors, minimal shading, simple shapes. A fixed style prompt holds it. This *is* the brand look.
+- **Character consistency:** each recurring character has a **character file** with a locked text description that the generator adds to every prompt that casts that character. Prompt-only consistency is good for build, hair, outfit and props; it is weak for precise hand poses. Planned upgrades, in order: **Poseidon LoRA** trained on the approved reference set → **IP-Adapter** → **ControlNet** for pose. Target: ~95% consistency.
+- **Poseidon (locked "for now", 2026-09-26):** stocky, barrel-chested, round belly, thick arms; huge fluffy white beard and wild spiky white hair; bushy white brows; big round pink nose; teal-blue toga over one shoulder, knee-length; bare feet; all-gold trident. Reference prompts: `tools/comfyui/prompts/poseidon_refs.py`.
+- **Text-hero and diagram beats** (§9.1) stay **code-rendered** from the existing kit (`kit/`), because image models draw text badly.
+- **Composition:** each script beat → one image prompt + cast list → one PNG in `episodes/<slug>/scenes/`. Re-roll by changing the seed or the prompt; pin a seed to keep a take.
 
 ### 8.2 Script-as-Edit-Decision-List
-The script is the single source of truth for the edit. Each beat carries: narration text, the image composition, and optional tags:
+The script (`episodes/<slug>/script.yml`) is the single source of truth for the edit. Each beat carries: narration text, the image (an AI image prompt + cast list, or a code-kit composition for text-hero beats), and optional tags:
 - `[HOLD]` — linger (e.g. on a punchline)
 - `[ZOOM]` — Ken Burns punch-in
 - `[SFX: record scratch]` — sound sting
-This lets assembly be comedic-timing-aware *automatically*, without manual editing.
+This lets assembly be comedic-timing-aware *automatically*, without manual editing. In `script.yml` these are list entries: `tags: [HOLD, ZOOM, "SFX:record scratch"]`. Full schema: `kit/SCRIPT.md`.
 
 ### 8.3 Audio sync (and audio contract)
 
-**Engine — locked: OpenAI Whisper API.** User records reading the script → the audio is sent to the OpenAI transcription API with word-level timestamps → each script beat is mapped to *when he actually said it* → cut points snap to real delivery. Chosen for **zero install tax + portability** (works from any machine the user opens a laptop on, not just a GPU desktop). Cost is negligible at our cadence (≈$0.06 per ~8-min episode → ≈$1.56/year at biweekly).
+**Engine — locked (2026-10-03): local faster-whisper** (`large-v3-turbo`, CUDA) on the GPU desktop. User records reading the script → faster-whisper returns word-level timestamps → each script beat is mapped to *when he actually said it* → cut points snap to real delivery. Zero cost, no API key, offline. Tested: 13 s of audio in 0.5 s; a 15-min episode takes about 1–2 min.
 
-> **Swap-out path (deferred, not blocking).** The alignment step is structured as a single boundary — a function with `audio → word-timestamps` semantics, no other code aware of the engine. To switch to a local engine later (e.g. **WhisperX** on the user's RTX 3080 desktop, for cost or offline reasons), only that one file changes. Cleanly reversible.
+> **Changed from the OpenAI Whisper API.** The API was first chosen for zero install and Mac portability. The pipeline now runs on the GPU desktop anyway (§8.1), so the local engine wins. The alignment step stays a single boundary (`render/align.ts`, `audio → word-timestamps`). The OpenAI API stays as a fallback engine, chosen by a setting, for runs on a machine without the GPU. Whisper writes numbers as digits ("9 to 5"), so beat matching must normalize numbers.
+
+**Engine environment:** a Python 3.12 venv at `<repo>/.whisper-env` (gitignored), built from `tools/whisper/requirements.lock.txt` by `tools/whisper/setup.ps1`. Do not run it while ComfyUI is generating: Flux uses almost all of the VRAM.
 
 **Audio contract (Stage 5 deliverable):** WAV, **mono**, **44.1 kHz**, **16-bit**, peak in `-6` to `-3` dBFS, quiet room. The assembly pipeline then normalizes the final mix to **-14 LUFS** (YouTube's loudness target). One file per episode (whole script in one take, retakes inlined — alignment + tagging handle the rest).
 
 ### 8.4 Rendering / assembly — locked stack
-**Locked: Remotion** (React-based programmatic video). Our SVG/Rough.js components drop straight in; it natively handles Ken Burns, burned-in animated captions, audio track, and SFX, and produces the final MP4 via headless Chrome + FFmpeg. Best fit for "videos defined in code." Both 16:9 (long-form) and 9:16 (Shorts) render from the same components → near-free vertical reframe.
+**Locked: Remotion** (React-based programmatic video). The AI stills drop in as images and the code-kit text scenes as components; it natively handles Ken Burns, burned-in animated captions, audio track, and SFX, and produces the final MP4 via headless Chrome + FFmpeg. Best fit for "videos defined in code." Both 16:9 (long-form) and 9:16 (Shorts) render from the same components → near-free vertical reframe.
 
 > Lighter-weight SVG→PNG + FFmpeg path was considered as a fallback and **rejected** — Remotion's React composition model is the right altitude for this project; FFmpeg-only would force us to re-implement what Remotion gives for free, with worse ergonomics for the EDL → render path.
 
@@ -156,26 +164,41 @@ This lets assembly be comedic-timing-aware *automatically*, without manual editi
 what-was-that-about/
   PRD.md
   plan.md
-  kit/            # SVG component library (actors, props, backgrounds, memes) + Rough.js styling
+  kit/            # code-drawn components (text-hero, diagrams, overlays) + script parser
   episodes/
     <slug>/       # e.g. ubik/
       seed.md         # user brain-dump
-      research.md     # Claude's synthesis + sources
-      script.md       # narration + [SECTION:...] + EDL tags + per-beat compositions (see §6.4, §8.2)
+      script.yml      # narration + [SECTION:...] + EDL tags + per-beat image prompts (see §6.4, §8.2)
       notes/
+        research.md   # Claude's synthesis + sources
         factcheck.md  # required gate file — must contain `Status: ✅ approved` before assembly runs
+      scenes/         # generated stills, one PNG per beat (gitignored; reproducible from prompt + seed)
       audio/          # WAV mono 44.1k/16-bit, -6..-3 dBFS peak (see §8.3)
-      out/            # rendered stills, rough cut, final cut
+      out/            # alignment, rough cut, final cut
       shorts/         # Pipeline A — auto-suggested Shorts derived from this episode
   shorts/         # Pipeline B — standalone custom Shorts authored at repo root
     <id>/
       seed.md
-      script.md
+      script.yml
       audio/
       out/
-  render/         # Remotion project + alignment step (OpenAI Whisper API boundary)
-  shared/         # tone presets, caption styles, music/SFX, brand tokens
+  render/         # Remotion project + alignment boundary (local faster-whisper)
+  scripts/        # CLI entry points (new-episode, generate-scenes, align, assemble, short)
+  shared/         # character files, tone presets, caption styles, music/SFX, brand tokens
+  tools/          # setup recipes for the local GPU tools (ComfyUI, Whisper) — see §8.6
 ```
+
+### 8.6 Local GPU tools & reproducibility
+The repo holds the **recipe** for each tool. The large installs and model files stay out of git.
+
+| Tool | Install location | Recipe |
+|------|------------------|--------|
+| ComfyUI portable + Flux GGUF | `C:\ComfyUI` (SSD — the 8 GB model loads on every cold start) | `tools/comfyui/setup.ps1`: pinned ComfyUI version, custom-node commits (`requirements.txt`), model URLs + SHA-256 (`models.json`) |
+| faster-whisper | `<repo>\.whisper-env` (gitignored) | `tools/whisper/setup.ps1` + `requirements.lock.txt` |
+
+- **ComfyUI rule:** use only the portable build. A manual venv install failed on PyTorch version conflicts.
+- **Remote use:** `C:\ComfyUI\run_nvidia_gpu_lan.bat` listens on `0.0.0.0:8188`. Open TCP 8188 in Windows Firewall for the local subnet. The generator reads the server address from `COMFY_URL`.
+- **Generated images** are not committed. The prompt, seed and pinned models reproduce them.
 
 ## 9. Captions, music & SFX
 
@@ -184,7 +207,7 @@ what-was-that-about/
 We do **not** use per-word pop captions (TikTok-style). They feel childish/unserious for an analysis channel and fight the visual for attention. Instead, two tiers — one always-on, one selective:
 
 1. **Line-pop subtitles (always on).** Burned-in, animated **one-line-at-a-time** captions running the full episode. Generated from the script + word-timestamps; ships free with the alignment step. Retention-friendly, accessible, and tonally calm — it disappears into the background.
-2. **Text-hero emphasis scenes (selective).** When a beat needs emphasis, the **image *is* the emphasis** — a big bold word / number / phrase fills the frame as the actual scene (e.g. **3,000 YEARS** in giant red type over a clean background, or a single huge **`?`**). This replaces the picture for that beat; it's a visual choice in the script, not a caption styling toggle. Author by composing the emphasis as a normal beat in the kit (see §6.0 — images carry the message).
+2. **Text-hero emphasis scenes (selective).** When a beat needs emphasis, the **image *is* the emphasis** — a big bold word / number / phrase fills the frame as the actual scene (e.g. **3,000 YEARS** in giant red type over a clean background, or a single huge **`?`**). This replaces the picture for that beat; it's a visual choice in the script, not a caption styling toggle. Author by composing the emphasis as a code-kit beat, not an AI image, so the text is exact (see §6.0 — images carry the message).
 
 The two tiers complement: subtitles handle the unbroken accessibility/retention layer; emphasis scenes handle the comic / dramatic punch points.
 
@@ -192,11 +215,11 @@ The two tiers complement: subtitles handle the unbroken accessibility/retention 
 
 - **Music:** royalty-free bed, mood-matched to the **tone tag** (Light / Balanced / Heavy each get a small pre-curated palette in `shared/music/`).
 - **SFX:** small comedic library (boings, record scratches, dings) triggered by `[SFX]` tags.
-- **Palette:** color/brand palette is **unified across the channel** (not tone-driven, not per-book). Brand recognition wins; the tone tag moves the *music* dial, not the *visual palette* dial.
+- **Palette:** color/brand palette is **unified across the channel** (not tone-driven, not per-book). For AI stills, the fixed style prompt and the character files hold the palette. Brand recognition wins; the tone tag moves the *music* dial, not the *visual palette* dial.
 - **Intro / outro bumper:** **no default bumper** on the pilot. A signature bumper is a creative-design task that is intentionally deferred (see §18); shipping the pilot does not depend on it. When designed, it will live in `shared/bumpers/` and slot in via the renderer.
 
 ## 10. Meme strategy
-- **Default:** redraw meme **formats** in house style (safer on copyright, monetization-friendly, on-brand, reusable).
+- **Default:** regenerate meme **formats** in house style with the local image generator, cast with our own characters (safer on copyright, monetization-friendly, on-brand, reusable).
 - **Experiment phase:** where the *expression/visual itself is the meme* and a redraw can't replace it, also try the **real image**. Produce both, A/B them in the review/polish step, keep what lands.
 - **Converge:** after a few episodes, codify a rule per meme-type.
 - **Watch:** real-meme usage can ding monetization — monitor that signal while testing.
@@ -207,8 +230,8 @@ The two tiers complement: subtitles handle the unbroken accessibility/retention 
 |------------|----------|
 | Research & synthesis | Pick book + tone tag |
 | Script draft (in voice, EDL-tagged) | Seed brain-dump / take |
-| Build & maintain component kit | **Fact-check script (required)** |
-| Compose & render all stills | Record audio |
+| Build & maintain image generator, character files, code kit | **Fact-check script (required)** |
+| Write image prompts & generate all stills | Review stills (taste) + record audio |
 | Build & run assembly pipeline | Light comedic-timing polish |
 | Auto-cut Shorts candidates | Pick Short(s) |
 | — | Titles, thumbnails, upload, community |
@@ -230,24 +253,29 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 | **3 — Growth** | Long term | Subscribers / views. (Views are the ultimate point — just not the *early* yardstick.) |
 
 ## 15. Costs & tools
-- **Pipeline:** mostly free / open-source (Rough.js, Remotion, royalty-free assets).
+- **Pipeline:** free / open-source (ComfyUI, Flux.1 Dev weights, faster-whisper, Remotion, royalty-free assets).
+- **Hardware:** the existing Windows desktop (RTX 3080 10 GB) — no new purchase.
 - **One-time:** a decent USB mic (~$50–100) for clean narration. *(Open item: confirm mic situation.)*
-- **Ongoing:** **~$1.56 / year** — the OpenAI Whisper API for forced alignment (≈$0.06 per ~8-min episode × biweekly cadence). Effectively a rounding error vs. the value of zero-setup portability. Optional later: paid music library, thumbnail tooling.
+- **Ongoing:** **~$0** — image generation and alignment run locally (electricity only). The OpenAI Whisper API (≈$0.06 per episode) is only a fallback. Optional later: paid music library, thumbnail tooling.
 
 ## 16. Legal / copyright / monetization
 - **Book content:** summary + analysis = transformative / fair use. We synthesize, never reproduce the text.
-- **Images:** original, code-generated → fully owned, monetization-safe.
-- **Memes:** house-style redraws are safe; real images are the risk surface (see §10).
+- **Images:** AI-generated locally with **Flux.1 Dev**. The weights use the FLUX.1 [dev] Non-Commercial License; its terms on commercial use of *outputs* must be checked before monetization (open item, §18). Code-kit images are original and fully owned.
+- **Style prompts:** naming other creators' styles is a reference for the look, not a copy. Do not reproduce their characters, logos or panels.
+- **Memes:** house-style regenerations are safe; real images are the risk surface (see §10).
 - **Music/SFX:** royalty-free / licensed only.
-- **AI disclosure:** visuals are code-generated (not gen-AI imagery); narration is a real human → minimal "AI content" exposure. Disclose per YouTube policy where applicable.
+- **AI disclosure:** visuals are AI-generated cartoon stills (not realistic, not depicting real people); narration is a real human. Follow YouTube's altered/synthetic content disclosure policy; cartoon stills normally fall outside the "realistic" disclosure rule, but check at upload.
 
 ## 17. Risks & mitigations
 | Risk | Mitigation |
 |------|------------|
 | **Factual errors** tank credibility | Required user fact-check gate (§7, 3b); cross-check vs. sources in research. |
 | **Pipeline too high-effort** → user quits | Effort-as-gate (§13); automate aggressively; measure ep#1 vs ep#2 effort. |
-| **SVG too clean / not charming** | Rough.js hand-wobble; deliberately crude kit; taste review. |
-| **Organic scenes hard in code** | Reframe as stick-figure-able compositions; accept crude charm; rare AI-assist only if needed. |
+| **Character drift between shots** | Locked character files; approved reference set; then Poseidon LoRA → IP-Adapter → ControlNet (§8.1). |
+| **AI errors (hands, poses, extra props, stray signatures)** | User reviews stills; re-roll seed or prompt; ControlNet for precise poses. |
+| **Flux.1 Dev license blocks monetized use** | Check the output terms before monetization (§16); fallback: a commercially licensed model (e.g. Flux.1 Schnell, Apache 2.0) with the same workflow. |
+| **Single GPU machine** | Recipes in `tools/` rebuild it on any NVIDIA PC; OpenAI Whisper API fallback for alignment. |
+| **GPU contention (10 GB VRAM)** | Run image generation and alignment one after the other, never together. |
 | **Comedic timing flat from auto-cut** | EDL tags + light manual polish pass. |
 | **Tone misfire on Heavy books** | Tone-tag system; constant-voice rule; never flippant about somber content. |
 | **Early metrics demoralize** | Staged metrics (§14); buffer before launch. |
@@ -255,7 +283,9 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 
 ## 18. Open items / deferred (not blocking)
 - **Channel name & handle** — *intentionally deferred*; the repo / working title "What Was That About" is fine for now. Decided not to block design lock on it.
-- **Narrator mascot / persona** design (affects kit; the recurring "narrator" stick figure). Deferred — pilot can ship without a fixed mascot; the casting doctrine (§6.0) still applies.
+- **Narrator mascot / persona** — Poseidon is the recurring character; his look is locked "for now" (§8.1) and gets refined during the pilot.
+- **Poseidon LoRA, IP-Adapter, ControlNet** — consistency upgrades (§8.1); do after the pilot shows where prompt-only consistency fails.
+- **Flux.1 Dev output license** — confirm commercial use of outputs before monetization (§16).
 - **Intro / outro bumper** — no default bumper on the pilot (see §9.2); creative-design task deferred.
 - **Thumbnail & title style** guide (SEO + click-through; best-practice defaults for now).
 - **Mic check** — confirm recording setup matches the audio contract in §8.3.
@@ -264,10 +294,15 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 
 **Phase 0 — Build the pipeline skeleton** *(Claude-heavy)*
 - Repo scaffold; Rough.js component kit (a few actors/poses/props/backgrounds); rendering layer (Remotion or FFmpeg); script→render path; forced-alignment + assembly; caption/music/SFX wiring; vertical Shorts render.
-- Exit: a throwaway 60-sec test renders end-to-end from a fake script + scratch audio.
+- Exit: a throwaway 60-sec test renders end-to-end from a fake script + scratch audio. **✅ Done (slices #2–#12).**
+
+**Phase 0.5 — Local visual + audio upgrade** *(in progress)*
+- Done: ComfyUI + Flux GGUF on the GPU desktop; Poseidon look locked "for now"; local faster-whisper env; `tools/` setup recipes.
+- To build: local Whisper in `align`; AI scene generation (`image:` beats, character files, `generate-scenes`, assembly uses PNGs).
+- Exit: the sample episode renders end-to-end with AI stills and local alignment.
 
 **Phase 1 — Ubik pilot** *(full pipeline dry-run)*
-- User seed → research → script (**Heavy** tone) → fact-check (`Status: ✅ approved`) → render → record → assemble → polish → Pipeline A Shorts.
+- User seed → research → script (**Heavy** tone) → fact-check (`Status: ✅ approved`) → generate + review stills → record → align → assemble → polish → Pipeline A Shorts.
 - Exit: a video the user is proud of; effort logged.
 
 **Phase 2 — Buffer & launch**

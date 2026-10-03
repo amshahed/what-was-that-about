@@ -4,6 +4,9 @@
 - **Date:** 2026-06-13
 - **Deciders:** project owner + Claude
 - **Relates to:** Issue #2, PRD §8.4
+- **Note (2026-09-26):** still in force. Character images now come from local AI stills
+  ([ADR 0002](./0002-visuals-local-ai-stills.md)); Remotion renders them as images. Rough.js
+  components remain for text-hero and diagram beats.
 
 ## Context
 The pipeline turns code-defined, hand-drawn-style (Rough.js) scenes into video: long-form 16:9 plus 9:16 Shorts, with motion (Ken Burns / `[ZOOM]` / `[HOLD]`), burned-in captions, music, and SFX, synced to recorded narration. The North-star constraint (PRD §13) is **minimal per-episode effort** — maximize reuse and automation.

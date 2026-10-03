@@ -30,3 +30,6 @@ episodes/**/audio/
 *.log
 .idea/
 .vscode/
+
+# local tool envs (see tools/)
+.whisper-env/

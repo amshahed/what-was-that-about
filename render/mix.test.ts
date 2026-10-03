@@ -31,6 +31,13 @@ describe("buildSfxEvents", () => {
     expect(events[1]).toEqual({ startFrame: 30, src: "/sfx/ding.wav" });
   });
 
+  it("normalizes hyphenated and mixed-case names before resolving", () => {
+    const beats = [beat("x", 0, 30, ["record-scratch", "Drum_Hit"])];
+    const resolve = (name: string) => SFX_FILES[name] ? `/sfx/${SFX_FILES[name]}` : null;
+    const events = buildSfxEvents(beats, resolve);
+    expect(events.map((e) => e.src)).toEqual(["/sfx/record-scratch.wav", "/sfx/drum-hit.wav"]);
+  });
+
   it("skips unknown sfx names (resolve returns null)", () => {
     const beats = [beat("text", 0, 30, ["unknown-sound"])];
     const events = buildSfxEvents(beats, () => null);
@@ -87,7 +94,7 @@ describe("musicVolumeAtFrame", () => {
 
 describe("TONE_MUSIC", () => {
   it("covers all tone values", () => {
-    const tones = ["light", "balanced", "heavy", "balanced-heavy"] as const;
+    const tones = ["light", "balanced", "heavy"] as const;
     for (const tone of tones) {
       expect(TONE_MUSIC[tone]).toMatch(/\.mp3$/);
     }

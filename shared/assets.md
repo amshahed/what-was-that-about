@@ -11,7 +11,6 @@ One file per tone tag. Loop-safe (no audible click at loop point).
 | light | `light-funk.mp3` | [Free Music Archive](https://freemusicarchive.org) — CC0 or CC BY |
 | balanced | `balanced-groove.mp3` | [Free Music Archive](https://freemusicarchive.org) — CC0 or CC BY |
 | heavy | `heavy-ambient.mp3` | [Free Music Archive](https://freemusicarchive.org) — CC0 or CC BY |
-| balanced-heavy | `balanced-heavy-ambient.mp3` | [Free Music Archive](https://freemusicarchive.org) — CC0 or CC BY |
 
 **Levels:** music bed rendered at 0.12 (−18 dBFS) when no narration, ducked to 0.04 (−28 dBFS)
 under narration beats. Narration should peak at −6 to −3 dBFS.
@@ -23,7 +22,8 @@ under narration beats. Narration should peak at −6 to −3 dBFS.
 
 ## SFX stings (`shared/sfx/`)
 
-Short comedic sound effects triggered by `[SFX: name]` tags in the script.
+Short comedic sound effects triggered by `SFX:<name>` tags in `script.yml` (e.g. `tags: ["SFX:record scratch"]`).
+Names are case-insensitive, and `-` or `_` count as spaces.
 
 | Tag name | File | Source / License |
 |----------|------|-----------------|

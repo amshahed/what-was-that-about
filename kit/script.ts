@@ -3,7 +3,7 @@
 
 import type { SceneSpec } from "./scene";
 
-export type Tone = "light" | "balanced" | "heavy" | "balanced-heavy";
+export type Tone = "light" | "balanced" | "heavy";
 
 export interface Beat {
   /** Narration text the narrator will read. The script-as-EDL spine. */

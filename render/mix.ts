@@ -10,10 +10,9 @@ export const TONE_MUSIC: Record<Tone, string> = {
   light: "light-funk.mp3",
   balanced: "balanced-groove.mp3",
   heavy: "heavy-ambient.mp3",
-  "balanced-heavy": "balanced-heavy-ambient.mp3",
 };
 
-// SFX name (lowercased) → sting filename (placed in shared/sfx/).
+// SFX name (normalized by sfxKey) → sting filename (placed in shared/sfx/).
 export const SFX_FILES: Record<string, string> = {
   "record scratch": "record-scratch.wav",
   boing: "boing.wav",
@@ -27,6 +26,11 @@ export interface SfxEvent {
   src: string;
 }
 
+/** Normalize an SFX tag name: case-insensitive; "-" and "_" count as spaces ("record-scratch" → "record scratch"). */
+export function sfxKey(name: string): string {
+  return name.toLowerCase().replace(/[-_\s]+/g, " ").trim();
+}
+
 /**
  * Build SFX events from a beat list.
  * @param resolve - returns the resolved src URL for a given SFX name, or null to skip.
@@ -38,7 +42,7 @@ export function buildSfxEvents(
   const events: SfxEvent[] = [];
   for (const beat of beats) {
     for (const name of beat.sfx) {
-      const src = resolve(name.toLowerCase());
+      const src = resolve(sfxKey(name));
       if (src !== null) events.push({ startFrame: beat.startFrame, src });
     }
   }

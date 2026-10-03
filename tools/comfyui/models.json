@@ -1,0 +1,32 @@
+{
+  "models": [
+    {
+      "file": "flux1-dev-Q5_K_S.gguf",
+      "folder": "unet",
+      "url": "https://huggingface.co/city96/FLUX.1-dev-gguf/resolve/main/flux1-dev-Q5_K_S.gguf",
+      "bytes": 8285267232,
+      "sha256": "aa76146ca0f1b09c67e0c3fcef18be3a375837ecd5aaa021d3e9ebc558bd68f9"
+    },
+    {
+      "file": "t5xxl_fp8_e4m3fn.safetensors",
+      "folder": "text_encoders",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors",
+      "bytes": 4893934904,
+      "sha256": "7d330da4816157540d6bb7838bf63a0f02f573fc48ca4d8de34bb0cbfd514f09"
+    },
+    {
+      "file": "clip_l.safetensors",
+      "folder": "text_encoders",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors",
+      "bytes": 246144152,
+      "sha256": "660c6f5b1abae9dc498ac2d21e1347d2abdb0cf6c0c0c8576cd796491d9a6cdd"
+    },
+    {
+      "file": "ae.safetensors",
+      "folder": "vae",
+      "url": "https://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/resolve/main/split_files/vae/ae.safetensors",
+      "bytes": 335304388,
+      "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
+    }
+  ]
+}
