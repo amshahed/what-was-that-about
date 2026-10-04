@@ -7,7 +7,7 @@ import { get, has, ids } from "./registry";
 import "./library"; // side-effect: guarantees every component is registered before composeScene is called
 
 export interface Layer {
-  /** Registered component id, e.g. "bg:cave-office", "actor:poseidon", "prop:trident". */
+  /** Registered component id, e.g. "bg:office-wall", "text:hero", "prop:desk". */
   component: string;
   /** Untyped props passed to the component's adapter; the adapter validates. */
   props?: Record<string, unknown>;

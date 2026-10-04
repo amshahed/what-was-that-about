@@ -27,26 +27,59 @@ export const CHARACTERS_DIR = path.join("shared", "characters");
 export const STYLE_FILE = path.join("shared", "style.yml");
 export const WORKFLOW_FILE = path.join("tools", "comfyui", "workflows", "flux-gguf.api.json");
 
-export function loadCharacters(dir = CHARACTERS_DIR): Map<string, Character> {
-  const out = new Map<string, Character>();
-  if (!existsSync(dir)) return out;
+function readCharacterDir(
+  dir: string,
+  out: Map<string, Character>,
+  where: Map<string, string>,
+): void {
+  if (!existsSync(dir)) return;
   for (const f of readdirSync(dir)
     .filter((n) => n.endsWith(".yml"))
     .sort()) {
     const id = f.slice(0, -".yml".length);
-    out.set(id, parseCharacter(readFileSync(path.join(dir, f), "utf8"), id));
+    const file = path.join(dir, f);
+    if (out.has(id)) {
+      throw new Error(
+        `character "${id}" is defined twice: ${where.get(id)} and ${file} — rename one`,
+      );
+    }
+    out.set(id, parseCharacter(readFileSync(file, "utf8"), id, file));
+    where.set(id, file);
   }
+}
+
+/**
+ * Channel characters (shared/characters/) plus this episode's own cast
+ * (episodes/<slug>/characters/). The same id in both places is an error.
+ */
+export function loadCharacters(
+  episodeDir?: string,
+  sharedDir = CHARACTERS_DIR,
+): Map<string, Character> {
+  const out = new Map<string, Character>();
+  const where = new Map<string, string>();
+  readCharacterDir(sharedDir, out, where);
+  if (episodeDir) readCharacterDir(path.join(episodeDir, "characters"), out, where);
   return out;
 }
 
+/** The episode's own look (episodes/<slug>/style.yml) if it has one, else the channel look. */
+export function styleFile(episodeDir?: string): string {
+  const own = episodeDir ? path.join(episodeDir, "style.yml") : undefined;
+  return own && existsSync(own) ? own : STYLE_FILE;
+}
+
 export function loadStyle(file = STYLE_FILE): SceneStyle {
-  return parseStyle(readFileSync(file, "utf8"));
+  return parseStyle(readFileSync(file, "utf8"), file);
 }
 
 export function loadWorkflow(file = WORKFLOW_FILE): { template: unknown; hash: string } {
   const template: unknown = JSON.parse(readFileSync(file, "utf8"));
-  // Hash the parsed JSON, so reformatting the file does not mark every still stale.
-  return { template, hash: hashText(JSON.stringify(template)) };
+  // Hash the parsed JSON, so reformatting the file does not mark every still stale; leave out the
+  // placeholder prompt (node 4), which generate-scenes replaces for every beat anyway.
+  const forHash = structuredClone(template) as Record<string, { inputs?: Record<string, unknown> }>;
+  if (forHash["4"]?.inputs) delete forHash["4"].inputs.text;
+  return { template, hash: hashText(JSON.stringify(forHash)) };
 }
 
 export function scenesDir(episodeDir: string): string {
@@ -84,13 +117,13 @@ export interface EpisodeScenes {
   manifest: Manifest;
 }
 
-/** Parse the script (cast ids checked against shared/characters) and plan its AI stills. */
+/** Parse the script (cast ids checked against the known characters) and plan its AI stills. */
 export function loadEpisodeScenes(episodeDir: string, scriptPath: string): EpisodeScenes {
-  const characters = loadCharacters();
+  const characters = loadCharacters(episodeDir);
   const script = parseScript(readFileSync(scriptPath, "utf8"), {
     characters: new Set(characters.keys()),
   });
-  const style = loadStyle();
+  const style = loadStyle(styleFile(episodeDir));
   const workflow = loadWorkflow();
   const manifest = readManifest(episodeDir, script.id);
   const plan = planScenes(script, {

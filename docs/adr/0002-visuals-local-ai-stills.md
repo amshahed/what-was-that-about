@@ -9,8 +9,8 @@
 
 The code-drawn SVG stick figures (Rough.js kit, #4) worked technically but looked too primitive.
 The target look is expressive cartoon characters with real bodies and varied poses
-(Crayon Capital, Clever Crack, Cyanide & Happiness). The recurring character Poseidon must look
-the same in every shot and every episode. Per-episode effort must stay low (PRD §13).
+(Crayon Capital, Clever Crack, Cyanide & Happiness). Recurring characters must look
+the same in every shot (and, for channel characters, every episode). Per-episode effort must stay low (PRD §13).
 
 ## Options considered
 
@@ -27,7 +27,8 @@ the same in every shot and every episode. Per-episode effort must stay low (PRD 
 - **Flux.1 Dev, GGUF Q5_K_S** (~8 GB) to fit 10 GB of VRAM, with T5-XXL fp8 + CLIP-L and the
   Flux VAE. Nodes: ComfyUI-GGUF, ComfyUI-Manager.
 - **Consistency:** a locked character description per recurring character, added to every prompt
-  that casts it. Later: Poseidon LoRA → IP-Adapter → ControlNet (pose).
+  that casts it. Later: character LoRA → IP-Adapter → ControlNet (pose). (Poseidon was the proof
+  of concept for the tools; he was removed on 2026-10-04 and is not part of any episode.)
 - **Text-hero and diagram beats stay in the code kit**, because image models draw text badly.
 - **Reproducibility:** pinned versions, node commits and model checksums in `tools/comfyui/`.
 

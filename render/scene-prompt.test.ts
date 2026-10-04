@@ -26,11 +26,11 @@ const STYLE: SceneStyle = {
   steps: 20,
   guidance: 3.5,
 };
-const POSEIDON: Character = {
-  id: "poseidon",
-  name: "Poseidon",
-  description: "Poseidon, a stocky god",
-  short: "Poseidon, stocky",
+const RUNCITER: Character = {
+  id: "runciter",
+  name: "Glen Runciter",
+  description: "Glen Runciter, a big gray-haired businessman",
+  short: "Runciter, big gray-haired man",
 };
 const JOE: Character = {
   id: "joe-chip",
@@ -41,8 +41,8 @@ const JOE: Character = {
 
 describe("composePrompt", () => {
   it("puts style first, then the character, the image, and the suffix", () => {
-    expect(composePrompt(STYLE, [POSEIDON], "Poseidon reads a book")).toBe(
-      "Cartoon panel. Poseidon, a stocky god. Poseidon reads a book. No text.",
+    expect(composePrompt(STYLE, [RUNCITER], "Runciter reads a book")).toBe(
+      "Cartoon panel. Glen Runciter, a big gray-haired businessman. Runciter reads a book. No text.",
     );
   });
 
@@ -53,10 +53,10 @@ describe("composePrompt", () => {
   });
 
   it("uses short descriptions and positions for 2–3 characters", () => {
-    expect(composePrompt(STYLE, [POSEIDON, JOE], "they argue")).toBe(
-      "Cartoon panel. On the left: Poseidon, stocky. On the right: Joe Chip, tired. they argue. No text.",
+    expect(composePrompt(STYLE, [RUNCITER, JOE], "they argue")).toBe(
+      "Cartoon panel. On the left: Runciter, big gray-haired man. On the right: Joe Chip, tired. they argue. No text.",
     );
-    expect(composePrompt(STYLE, [POSEIDON, JOE, POSEIDON], "x")).toContain(
+    expect(composePrompt(STYLE, [RUNCITER, JOE, RUNCITER], "x")).toContain(
       "In the middle: Joe Chip, tired.",
     );
   });
@@ -64,10 +64,10 @@ describe("composePrompt", () => {
 
 describe("seeds and keys", () => {
   it("derives a stable seed from the text, not the position", () => {
-    expect(deriveSeed("Poseidon reads", ["poseidon"])).toBe(
-      deriveSeed("Poseidon reads", ["poseidon"]),
+    expect(deriveSeed("Runciter reads", ["runciter"])).toBe(
+      deriveSeed("Runciter reads", ["runciter"]),
     );
-    expect(deriveSeed("Poseidon reads", ["poseidon"])).not.toBe(deriveSeed("Poseidon reads", []));
+    expect(deriveSeed("Runciter reads", ["runciter"])).not.toBe(deriveSeed("Runciter reads", []));
     const s = deriveSeed("x", []);
     expect(Number.isInteger(s) && s >= 0 && s <= 2 ** 32 - 1).toBe(true);
   });
@@ -80,8 +80,8 @@ describe("seeds and keys", () => {
   });
 
   it("makes readable file names", () => {
-    expect(stillFileName("Poseidon facepalming at a desk, again!", "3fa91c2e")).toBe(
-      "poseidon-facepalming-at-a-desk-3fa91c2e.png",
+    expect(stillFileName("Joe Chip argues with his door, again!", "3fa91c2e")).toBe(
+      "joe-chip-argues-with-his-3fa91c2e.png",
     );
     expect(stillFileName('"…" ???', "00000000")).toBe("scene-00000000.png");
     expect(stillFileName("Café naïve résumé", "k")).toBe("cafe-naive-resume-k.png");
@@ -99,11 +99,11 @@ beats:
   - narration: a
     scene: { layers: [{ component: bg:office-wall }] }
   - narration: b
-    scene: { image: "Poseidon reads", cast: [poseidon] }
+    scene: { image: "Runciter reads", cast: [runciter] }
   - narration: c
     scene: { image: "a shelf", seed: 5 }
 `);
-  const characters = new Map([["poseidon", POSEIDON]]);
+  const characters = new Map([["runciter", RUNCITER]]);
   const base = { characters, style: STYLE, workflowHash: "w", existing: new Set<string>() };
 
   it("plans only AI beats, with derived and pinned seeds", () => {
@@ -166,13 +166,13 @@ beats:
 
 describe("character and style files", () => {
   it("parses a character and checks id against the file name", () => {
-    const yaml = "id: poseidon\nname: Poseidon\ndescription: Poseidon, a god\n";
-    expect(parseCharacter(yaml, "poseidon").description).toBe("Poseidon, a god");
+    const yaml = "id: runciter\nname: Runciter\ndescription: Runciter, a big man\n";
+    expect(parseCharacter(yaml, "runciter").description).toBe("Runciter, a big man");
     expect(() => parseCharacter(yaml, "zeus")).toThrow('must equal the file name "zeus"');
-    expect(() => parseCharacter(yaml + "pose: sitting\n", "poseidon")).toThrow(
+    expect(() => parseCharacter(yaml + "pose: sitting\n", "runciter")).toThrow(
       'unknown field "pose"',
     );
-    expect(() => parseCharacter("id: poseidon\nname: P\n", "poseidon")).toThrow('"description"');
+    expect(() => parseCharacter("id: runciter\nname: R\n", "runciter")).toThrow('"description"');
   });
 
   it("parses the style and rejects sizes that are not multiples of 64", () => {
@@ -188,19 +188,11 @@ describe("character and style files", () => {
     expect(() => parseStyle(yaml.replace("768", "770"))).toThrow("multiple of 64");
   });
 
-  it("loads the committed shared/ files", () => {
+  it("loads the committed channel style", () => {
     const style = parseStyle(readFileSync(new URL("../shared/style.yml", import.meta.url), "utf8"));
-    const poseidon = parseCharacter(
-      readFileSync(new URL("../shared/characters/poseidon.yml", import.meta.url), "utf8"),
-      "poseidon",
-    );
     expect(style.width % 64).toBe(0);
-    expect(poseidon.description).toMatch(/^Poseidon, a stocky barrel-chested/);
-    expect(
-      estimateTokens(
-        composePrompt(style, [poseidon], "Poseidon reads a long book; setting: a cave office"),
-      ),
-    ).toBeLessThan(400);
+    const prompt = composePrompt(style, [RUNCITER], "Runciter talks to Ella; setting: a quiet moratorium", { caption: true });
+    expect(estimateTokens(prompt)).toBeLessThan(400);
   });
 });
 

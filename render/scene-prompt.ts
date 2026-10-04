@@ -63,8 +63,11 @@ function text(
 }
 
 /** Parse shared/characters/<fileId>.yml. */
-export function parseCharacter(yamlText: string, fileId: string): Character {
-  const where = `shared/characters/${fileId}.yml`;
+export function parseCharacter(
+  yamlText: string,
+  fileId: string,
+  where = `characters/${fileId}.yml`,
+): Character {
   const obj = asRecord(parseYaml(yamlText), where);
   checkKeys(obj, CHARACTER_KEYS, where);
   const id = text(obj, "id", where)!;
@@ -79,8 +82,7 @@ export function parseCharacter(yamlText: string, fileId: string): Character {
 }
 
 /** Parse shared/style.yml. Width and height must be multiples of 64 (Flux latent grid). */
-export function parseStyle(yamlText: string): SceneStyle {
-  const where = "shared/style.yml";
+export function parseStyle(yamlText: string, where = "style.yml"): SceneStyle {
   const obj = asRecord(parseYaml(yamlText), where);
   checkKeys(obj, STYLE_KEYS, where);
   const num = (key: string, ok: (n: number) => boolean, rule: string): number => {
@@ -174,7 +176,7 @@ export function hashText(s: string): string {
   return sha256(s);
 }
 
-/** "Poseidon facepalming at a desk…" + key → "poseidon-facepalming-at-a-desk-3fa91c2e.png". */
+/** "Joe Chip argues with his door…" + key → "joe-chip-argues-with-his-3fa91c2e.png". */
 export function stillFileName(image: string, key: string): string {
   const slug =
     image

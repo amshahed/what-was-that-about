@@ -20,9 +20,10 @@ C:\ComfyUI\run_nvidia_gpu_lan.bat
 - Pins: ComfyUI portable version and custom-node commits are in `setup.ps1`. Model URLs and SHA-256 checksums are in `models.json`.
 - `requirements.txt`: the pinned Python packages that the custom nodes add to ComfyUI's embedded Python. ComfyUI has no separate env.
 - `workflows/flux-gguf.api.json`: the base text-to-image workflow, in API format.
-- `prompts/poseidon_refs.py`: makes the Poseidon reference set (stocky build, teal toga, gold trident).
+- `prompts/character_refs.py <character.yml> [style.yml]`: makes a reference set for one character
+  (8 poses × 3 seeds) so you can approve the look; contact sheet in `out/refs/`.
 - Episode stills: `npm run generate-scenes <slug>` uses `workflows/flux-gguf.api.json` with
-  `shared/style.yml` and `shared/characters/`. It checks that the GGUF node and the 4 model files are
+  the episode's (or channel's) `style.yml` and character files. It checks that the GGUF node and the 4 model files are
   installed before it starts.
 - Remote use: the LAN launcher listens on `0.0.0.0:8188`. ComfyUI has no login, so open the port only on a
   trusted home network. Set that Wi-Fi to **Private** (Settings → Network → Wi-Fi), then run as admin:

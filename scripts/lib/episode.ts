@@ -21,6 +21,11 @@ export function requireFile(p: string, hint: string): string {
   return p;
 }
 
+/** True only when a line reads exactly `Status: ✅ approved` (a mention in a comment does not count). */
+export function isFactcheckApproved(text: string): boolean {
+  return /^Status: ✅ approved\s*$/m.test(text);
+}
+
 export function checkFactgate(episodeDir: string): void {
   const factcheckPath = path.join(episodeDir, "notes", "factcheck.md");
   requireFile(
@@ -28,8 +33,8 @@ export function checkFactgate(episodeDir: string): void {
     'Create episodes/<slug>/notes/factcheck.md containing "Status: ✅ approved" once you have verified the script.',
   );
   const content = readFileSync(factcheckPath, "utf8");
-  if (!content.includes("Status: ✅ approved")) {
-    console.error("Render gate: factcheck.md does not contain 'Status: ✅ approved'.");
+  if (!isFactcheckApproved(content)) {
+    console.error("Render gate: factcheck.md has no line reading exactly 'Status: ✅ approved'.");
     console.error(`Add that line to ${factcheckPath} once the script has been fact-checked.`);
     process.exit(2);
   }

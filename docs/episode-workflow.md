@@ -5,18 +5,20 @@ The standard loop for one video. Stage numbers match the pipeline table in
 
 The pipeline enforces one gate: assembly and Shorts do not run until the fact-check is approved.
 
-| Stage                  | Owner | Output                                       |
-| ---------------------- | ----- | -------------------------------------------- |
-| 0 Book + tone tag      | U     | `seed.md` tone line                          |
-| 1 Seed / brain-dump    | U     | `seed.md`                                    |
-| 2 Research             | C     | `notes/research.md`                          |
-| 3 Script (EDL)         | C     | `script.yml`                                 |
-| 3b Fact-check gate ⛔  | U     | `notes/factcheck.md` → `Status: ✅ approved` |
-| 4 Scene images         | C + U | `scenes/*.png`, `out/scenes.html`            |
-| 5 Narration            | U     | `audio/narration.wav`                        |
-| 6 Alignment + assembly | C + U | `out/alignment.json`, `out/roughcut.mp4`     |
-| 7 Shorts               | C + U | `out/short-*.mp4`                            |
-| 8 Publish              | U     | YouTube upload                               |
+| Stage                  | Owner | Output                                                                        |
+| ---------------------- | ----- | ----------------------------------------------------------------------------- |
+| 0 Book + tone tag      | U     | `new-episode`, the book in `notes/source/`, tone tag                          |
+| 1 Your take            | U     | `seed.md` — summary, explanation, analysis, review                            |
+| 2 Book notes           | C     | `notes/characters.md`, `concepts.md`, `plot.md`, `analysis.md`, `research.md` |
+| 2b Merge → outline     | C + U | `notes/outline.md`                                                            |
+| 2c Cast + looks        | C + U | `characters/<id>.yml`, reference sets, optional `style.yml`                   |
+| 3 Script (EDL)         | C + U | `script.yml` (draft → edits → final)                                          |
+| 3b Fact-check gate ⛔  | U     | `notes/factcheck.md` → `Status: ✅ approved`                                  |
+| 4 Scene images         | C + U | `scenes/*.png`, `out/scenes.html`                                             |
+| 5 Narration            | U     | `audio/narration.wav`                                                         |
+| 6 Alignment + assembly | C + U | `out/alignment.json`, `out/roughcut.mp4`                                      |
+| 7 Shorts               | C + U | `out/short-*.mp4`                                                             |
+| 8 Publish              | U     | YouTube upload                                                                |
 
 ---
 
@@ -26,8 +28,11 @@ The pipeline enforces one gate: assembly and Shorts do not run until the fact-ch
 npm run new-episode <book-slug>
 ```
 
-The slug is kebab-case and has no number (`ubik`, not `01-ubik`). The command creates
-`seed.md`, `script.yml`, `notes/research.md` and `notes/factcheck.md`.
+The slug is kebab-case and has no number (`ubik`, not `01-ubik`). The command creates `seed.md`,
+`script.yml`, the `notes/` files below, and empty `notes/source/`, `characters/`, `audio/`, `out/`.
+
+**Put your copy of the book** (EPUB, PDF or text) in `notes/source/`. Git ignores that folder — the
+book is never committed. Claude reads it from there.
 
 Set the tone tag in `seed.md` and `script.yml` ([PRD §6.1](../PRD.md#61-tone-system-adaptive-per-book)):
 
@@ -42,25 +47,74 @@ ago, or it was just fun → `light`. The narrator voice stays the same for every
 
 ---
 
-## Stage 1 — Seed / brain-dump
+## Stage 1 — Your take (U)
 
-Fill in `seed.md`: your angle (one strong paragraph), the gags you want and what to cut.
-Dump your take — the bits that struck you and anything that must be in the video.
+Write your own summary, explanation, analysis and review in `seed.md`, plus the bits that must be
+in the video. Rough is fine. **Write it before you read Claude's notes**: two independent takes make a
+better script than one take edited by the other person.
 
 ---
 
-## Stage 2 — Research
+## Stage 2 — Book notes (C)
 
-Claude researches (own knowledge + a web pass) and writes `notes/research.md`:
-claims to verify, verified facts with sources, cut ideas and sources. Claude synthesizes and
-never copies. You review the angle; you do not do the research.
+Claude reads the book cover to cover and writes, **in its own words with chapter references**
+(no long quotes from the book):
+
+| File                  | Contents                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `notes/characters.md` | Everyone who may appear: role, look from the book (face, hair, age, height, weight/build, clothes, props, quirks), arc. Additions we invent are marked as ours. |
+| `notes/concepts.md`   | The book's ideas and terms, how they work, and whether the viewer needs them before the story (setup) or when they appear (inline).              |
+| `notes/plot.md`       | Chapter-by-chapter plot, then a short summary for the video.                                                                                     |
+| `notes/analysis.md`   | Claude's own reading: open questions, themes, interpretations, review points.                                                                    |
+| `notes/research.md`   | Outside sources, the critical landscape, claims to verify.                                                                                       |
+
+The chapter references make the fact-check fast, and `characters.md` feeds the character files.
+
+Claude does **not** read `seed.md` until its notes are done, so the two takes stay independent.
+
+---
+
+## Stage 2b — Merge → outline (C + U)
+
+You read Claude's notes; Claude reads your `seed.md`. Together we merge the two takes into
+`notes/outline.md`: the angle, the cast, what each section covers, and where each character and
+concept is introduced.
+
+**Review rounds:** you correct Claude's notes and the outline in place (edit the files, or tell
+Claude); Claude revises; we commit after each round. The same loop applies to the script, and the
+final script is `script.yml`.
+
+**Introduce only what the story needs first** (e.g. for Ubik: psi and anti-psi, half-life, Joe and
+Runciter) in the setup, about 60–90 s. Everything else is introduced **inline**, when it first
+appears in the recap. A glossary up front loses viewers before the story starts.
+
+The runtime limits the content (heavy: ~1,200–1,500 words, 40–60 beats). The notes can be
+complete; the outline and script must cut.
+
+---
+
+## Stage 2c — Cast and looks (C + U)
+
+- **Keep the cast small.** Main characters get an own look; everyone else is a generic figure
+  ("a group of anti-psis").
+- Claude writes one file per main character in `episodes/<slug>/characters/<id>.yml` from
+  `notes/characters.md` (channel-wide characters, if any, live in `shared/characters/`). See
+  [`shared/characters/README.md`](../shared/characters/README.md).
+- Claude makes a reference set per main character (8 poses × 3 seeds, ~20 min of GPU each):
+  `C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py episodes/<slug>/characters/<id>.yml`
+  → contact sheet in `out/refs/`. A character in `episodes/<slug>/characters/` uses that episode's
+  `style.yml` automatically (if there is one); pass a style file as the second argument to override. You approve each look before it goes into the stills.
+- **Episode look (optional):** an `episodes/<slug>/style.yml` replaces the channel look
+  (`shared/style.yml`) for this episode only — for example a game-like style that fits the book.
+  Same fields as the channel file.
 
 ---
 
 ## Stage 3 — Script draft (Edit Decision List)
 
-Claude drafts `script.yml` in the channel voice. Each beat is one shot: narration, one image and
-optional tags. Full schema: [`kit/SCRIPT.md`](../kit/SCRIPT.md).
+Claude drafts `script.yml` from the outline, in the channel voice; we edit it together until it
+is final. Each beat is one shot: narration, one image and optional tags. Full schema:
+[`kit/SCRIPT.md`](../kit/SCRIPT.md).
 
 ### Sections
 
@@ -98,8 +152,8 @@ Each beat has one picture. Pick one of two kinds:
 - **AI still (default)** — a short image prompt and the cast list:
   ```yaml
   scene:
-    image: "Poseidon facepalming at a desk buried in paperwork"
-    cast: [poseidon] # adds the locked character description from shared/characters/
+    image: "Joe Chip argues with his coin-operated front door, patting his empty pockets"
+    cast: [joe-chip] # adds the locked description from characters/joe-chip.yml
     seed: 2041 # optional — pin it to keep a take you like
     caption: "Still can't escape the 9 to 5."
   ```
@@ -114,7 +168,8 @@ Each beat has one picture. Pick one of two kinds:
   models draw text badly, so text stays code-rendered. See [`kit/README.md`](../kit/README.md).
 
 `caption` (both kinds) shows in a bar at the top of the frame; the narration subtitles use the bottom.
-Characters live in `shared/characters/` (see its README); the channel look in `shared/style.yml`.
+Characters live in `characters/` (this episode) or `shared/characters/` (channel); the look in
+`style.yml` (this episode, optional) or `shared/style.yml` (channel).
 
 ### Keeping it funny
 
@@ -155,7 +210,7 @@ the VRAM. From the Mac, set `COMFY_URL=http://<desktop LAN IP>:8188` (now `192.1
 it in the router's DHCP settings).
 
 **Review:** open `out/scenes.html` — every beat in order, with beat numbers, narration, seed and
-the full prompt on hover. Name the misses (e.g. "7 has two tridents, 12 has bad hands"), then:
+the full prompt on hover. Name the misses (e.g. "7 has two Ubik cans, 12 has bad hands"), then:
 
 ```
 npm run generate-scenes <slug> -- --reroll 7,12   # 3 new candidates per beat, shown on the page
@@ -252,10 +307,19 @@ Title, thumbnail, description and tags, upload, schedule. Credit CC BY music in 
 
 ```
 episodes/<slug>/
-  seed.md              — angle + tone tag (creative brief)
-  script.yml           — EDL script (source of truth for beats)
+  seed.md              — your take: summary, explanation, analysis, review (+ tone tag)
+  script.yml           — EDL script (source of truth for beats; the final script lives here)
+  style.yml            — optional episode look (replaces shared/style.yml)
+  characters/
+    <id>.yml           — this book's cast: locked looks, text only
   notes/
-    research.md        — research + claims to verify
+    source/            — your copy of the book (gitignored, never committed)
+    characters.md      — Claude: looks, roles, arcs (chapter refs)
+    concepts.md        — Claude: the book's ideas and terms
+    plot.md            — Claude: chapter-by-chapter plot + short summary
+    analysis.md        — Claude's own reading
+    research.md        — outside sources, critical landscape, claims to verify
+    outline.md         — the merged plan for the video
     factcheck.md       — render gate (must reach "Status: ✅ approved")
   scenes/              — gitignored; reproducible from prompt + seed + pinned models
     <prompt-words>-<key>.png — one per AI-still beat (plus re-roll candidates)
@@ -268,3 +332,6 @@ episodes/<slug>/
     roughcut.mp4       — 16:9 full episode
     short-*.mp4        — 9:16 Shorts
 ```
+
+`new-episode` creates the empty `notes/source/` and `characters/` folders; git does not keep empty
+folders, so run `new-episode` again on a fresh clone to recreate them (existing files are skipped).

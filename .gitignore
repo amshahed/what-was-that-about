@@ -14,12 +14,13 @@ out/
 episodes/**/out/
 episodes/**/audio/
 episodes/**/scenes/
+# your copy of the book (Claude reads it; never committed)
+episodes/**/notes/source/
 *.mp4
 *.mov
 *.wav
 *.mp3
 *.png
-!**/samples/**.png
 
 # env & secrets
 .env

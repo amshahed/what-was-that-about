@@ -141,7 +141,7 @@ function parseImageScene(
         const known = [...opts.characters].sort().join(", ") || "none";
         throw new ScriptParseError(
           p,
-          `unknown character "${c}" (known: ${known}) — add shared/characters/${c}.yml`,
+          `unknown character "${c}" (known: ${known}) — add characters/${c}.yml (episode) or shared/characters/${c}.yml (channel)`,
         );
       }
       cast.push(c);

@@ -49,12 +49,13 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #10 | Music bed + SFX (tone-tag-driven) | AFK | #8 | 🟩 merged (PR #23) |
 | #11 | Shorts auto-cut (9:16) | AFK | #4, #8, #9 | 🟩 merged (PR #24) |
 | #12 | Per-episode content workflow scaffolding | AFK | #5 | 🟩 merged (PR #25) |
-| V0 | Local GPU tools: ComfyUI + Flux GGUF, faster-whisper env, `tools/` recipes, Poseidon look | **HITL** | — | 🟩 merged (PR: V0 local tools + docs) |
+| V0 | Local GPU tools: ComfyUI + Flux GGUF, faster-whisper env, `tools/` recipes | **HITL** | — | 🟩 merged (PR #26) |
 | V1 (#27) | Local Whisper in `align` (faster-whisper engine; OpenAI API as fallback) | AFK | V0 | 🟩 merged (PR #28) |
 | V2 (#29) | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | 🟩 merged (PR #30) |
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 ✅ | ⬜ unblocked |
-| #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ Poseidon look locked "for now" |
-| V3 | Poseidon LoRA trained on the approved reference set | **HITL** | V2, pilot feedback | ⬜ later |
+| #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ |
+| #31 | Book-first episode workflow; per-episode characters and style; remove Poseidon | AFK | V2 | 🟩 merged (PR #32) |
+| V3 | Character LoRA trained on an approved reference set | **HITL** | V2, pilot feedback | ⬜ later |
 | V4 | ControlNet pose control (+ IP-Adapter) for precise poses | AFK | V2 | ⬜ later |
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
 | — | Shorts Pipeline B: standalone `shorts/<id>/` (PRD §7.7) | AFK | — | ⬜ later |
@@ -67,7 +68,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 ### Critical path
 `#2 → #3 (spine)` then `#2 → #4 → #5 → {#6, #7} → #8 → {#9, #10, #11} → #13`
 - `#12` (content workflow) needs only `#5`; can run alongside the assembly slices.
-- `#14` (brand) is parallel. Poseidon's look is locked "for now" in V0; name, thumbnail style and title style remain.
+- `#14` (brand) is parallel: name, thumbnail style and title style. No mascot for now.
 - Upgrade path: `V0 → {V1, V2} → #13`. The Ubik seed, research, script and fact-check need no images, so they run in parallel with V1/V2.
 
 ### Phase mapping (PRD §19)
@@ -104,14 +105,16 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 11. **Episode id convention — slug-only** (§8.5).
 12. **Palette — unified across the channel** (§9.2), not tone-driven per book.
 13. **Intro / outro bumper — no default bumper on the pilot** (§9.2, §18); creative-design task deferred.
-14. **Fact-check artifact** (§7 stage 3b, §8.5): `episodes/<slug>/notes/factcheck.md` must contain `Status: ✅ approved` — assembly refuses to run otherwise. Hard render gate.
+14. **Fact-check artifact** (§7 stage 3b, §8.5): `episodes/<slug>/notes/factcheck.md` must have a line reading exactly `Status: ✅ approved` — assembly refuses to run otherwise. Hard render gate.
 
 ### Visual + audio upgrade (2026-09-26 / 2026-10-03)
 15. **Visuals — AI stills, not SVG stick figures** (§8.1). Stills only: no animation, no lip sync. Generated **locally** (no cloud API) with ComfyUI portable + Flux.1 Dev GGUF Q5_K_S. Text-hero beats stay code-rendered.
-16. **Poseidon look — locked "for now"** (§8.1): stocky, barrel-chested, round belly; white beard and wild hair; pink nose; teal toga over one shoulder; all-gold trident. Refine during the pilot.
+16. ~~**Poseidon look**~~ → **removed (2026-10-04).** Poseidon was only the proof of concept for the tools; no mascot for now.
 17. **Whisper engine — local faster-whisper** (§8.3), OpenAI API as fallback. Supersedes decision 1.
 18. **Reproducibility — recipes in `tools/`** (§8.6): pinned versions, model checksums, setup scripts. Installs and models stay out of git; generated images are not committed.
-19. **Character reference images stay out of git** (2026-10-03). They live on the GPU desktop; the prompts and seeds in `tools/comfyui/prompts/` reproduce them. Character files in `shared/characters/` hold text only. A trained LoRA file also stays local, in `C:\ComfyUI\ComfyUI\models\loras\`.
+19. **Character reference images stay out of git** (2026-10-03). They live on the GPU desktop; the prompts and seeds in `tools/comfyui/prompts/` reproduce them. Character files in `episodes/<slug>/characters/` and `shared/characters/` hold text only. A trained LoRA file also stays local, in `C:\ComfyUI\ComfyUI\models\loras\`.
+20. **Book-first episode workflow** (2026-10-04): user writes their own take (seed.md); Claude reads the book (user's copy in `notes/source/`, gitignored) and writes characters/concepts/plot/analysis notes in its own words with chapter refs; the takes are merged into `notes/outline.md`, then the script. Setup introduces only the essentials; the rest is introduced inline.
+21. **Per-episode cast and look** (2026-10-04): a book's characters live in `episodes/<slug>/characters/`; an optional `episodes/<slug>/style.yml` replaces the channel look for that episode. Keep the cast small; main characters get approved reference sets.
 
 ## North-star constraints (don't violate)
 - **Effort is a continuation gate** (PRD §13): drive per-episode *user* effort toward zero; episode #2 must be far easier than #1.
@@ -122,14 +125,14 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 ---
 
 ## Next action
-**Phase 0 (pipeline skeleton) complete.** **Phase 0.5 (local upgrade) in progress.**
+**Phase 0 and Phase 0.5 complete.** Next: **#13 — Ubik pilot** (book-first workflow, decision 20;
+steps in `docs/episode-workflow.md`):
 
-Next, in this order:
-1. **#13 — Ubik pilot.** Every pipeline step is built:
-   1. `npm run new-episode ubik`.
-   2. Fill in `episodes/ubik/seed.md` (angle + tone: Heavy, locked decision #10).
-   3. Claude researches → `notes/research.md`; drafts `script.yml` with an image prompt per beat.
-   4. Verify facts → set `Status: ✅ approved` in `notes/factcheck.md`.
-   5. `npm run generate-scenes ubik` → review `out/scenes.html` → `-- --reroll N` / `-- --pick N=k` for misses.
-   6. Record narration → `audio/narration.wav`.
-   7. `npm run align ubik` → `npm run assemble ubik`.
+1. `npm run new-episode ubik`; user puts their copy of the book in `episodes/ubik/notes/source/`.
+2. User writes their take in `seed.md` (tone: Heavy, decision 10) — independently.
+3. Claude reads the book → `notes/characters.md`, `concepts.md`, `plot.md`, `analysis.md`, `research.md`.
+4. Merge → `notes/outline.md` (setup: psi/anti-psi, half-life, Joe, Runciter; the rest inline).
+5. Cast files `episodes/ubik/characters/*.yml` + reference sets; decide the episode look (`style.yml`).
+6. Script draft → edits → final; fact-check → `Status: ✅ approved`.
+7. `npm run generate-scenes ubik` → review → re-roll/pick; record narration.
+8. `npm run align ubik` → `npm run assemble ubik` → polish → loudness slice before publish.

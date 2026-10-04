@@ -5,7 +5,7 @@ A funny/casual **book summary & analysis** YouTube channel, produced through a m
 ## How an episode is made
 
 ```
-seed → research → script.yml → fact-check gate → scene images → narration → alignment → assembly → Shorts
+book → your take + Claude's book notes → outline → script.yml → fact-check gate → scene images → narration → alignment → assembly → Shorts
 ```
 
 | Step                | Tool                                                                       | Runs on            |
@@ -38,7 +38,7 @@ Design decisions: [`docs/adr/`](./docs/adr).
    ```
 4. Optional: put the music and SFX files in `shared\`. See [`shared/assets.md`](./shared/assets.md).
 5. `npm run generate-scenes` starts ComfyUI by itself when needed. To start it by hand (for example
-   for `tools/comfyui/prompts/poseidon_refs.py`): `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
+   for `tools/comfyui/prompts/character_refs.py`): `C:\ComfyUI\run_nvidia_gpu_lan.bat`.
 6. Start an episode: `npm run new-episode <slug>`. See [`docs/episode-workflow.md`](./docs/episode-workflow.md).
 
 `npm run align` uses local Whisper by default. To use the OpenAI API instead (for example on the Mac), in PowerShell:
@@ -62,7 +62,7 @@ Spec-driven, one slice at a time:
 ## Status
 
 - **Phase 0 — pipeline skeleton:** done (slices #2–#12).
-- **Phase 0.5 — local upgrade:** in progress. Done: ComfyUI + Flux, Poseidon look, Whisper env,
+- **Phase 0.5 — local upgrade:** done: ComfyUI + Flux, Whisper env,
   `tools/` recipes, local Whisper in `align` (V1), AI scene generation (V2).
 - **Phase 1 — Ubik pilot (#13):** next. Every step of the pipeline runs.
 

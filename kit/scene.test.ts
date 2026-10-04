@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { composeScene, UnknownComponentError, type SceneSpec } from "./scene";
+import { estimatedWidth, heroFontSize, HERO_MAX_WIDTH } from "./primitives/TextHero";
 import "./library";
 
 const officeSpec: SceneSpec = {
   layers: [
-    { component: "bg:cave-office" },
-    { component: "actor:poseidon", props: { x: 760, y: 430, pose: "sitting" } },
+    { component: "bg:office-wall" },
     { component: "prop:desk", props: { x: 600, y: 620, w: 720, h: 200 } },
   ],
   caption: "test",
@@ -26,20 +26,54 @@ describe("composeScene", () => {
     expect(() => renderToStaticMarkup(composeScene(bad))).toThrow(/Known:/);
   });
 
-  it("renders the same actor identically across scenes (recurring-character invariant)", () => {
-    const sceneA: SceneSpec = {
-      layers: [{ component: "actor:poseidon", props: { x: 500, y: 400, pose: "glory" } }],
-    };
-    const sceneB: SceneSpec = {
-      layers: [{ component: "actor:poseidon", props: { x: 500, y: 400, pose: "glory" } }],
-    };
-    expect(renderToStaticMarkup(composeScene(sceneA))).toEqual(
-      renderToStaticMarkup(composeScene(sceneB)),
-    );
-  });
-
   it("appends a caption layer when spec.caption is set", () => {
     const withCap = renderToStaticMarkup(composeScene(officeSpec));
     expect(withCap).toContain("test");
+  });
+});
+
+describe("text:hero", () => {
+  it("renders the word, the optional sub line and the colour", () => {
+    const html = renderToStaticMarkup(
+      composeScene({
+        layers: [
+          { component: "bg:paper" },
+          {
+            component: "text:hero",
+            props: { text: "HALF-LIFE", sub: "(it is not a game)", color: "red" },
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("HALF-LIFE");
+    expect(html).toContain("(it is not a game)");
+    expect(html).toContain("#b23b3b");
+  });
+
+  it("shrinks long phrases to fit the frame", () => {
+    expect(heroFontSize("?")).toBe(260);
+    for (const t of ["SAFE WHEN USED AS DIRECTED", "HALF-LIFE", "UBIK"]) {
+      expect(estimatedWidth(t, heroFontSize(t))).toBeLessThanOrEqual(HERO_MAX_WIDTH);
+    }
+    expect(heroFontSize("x".repeat(200))).toBe(72);
+  });
+
+  it("squeezes text that would still overflow", () => {
+    const html = renderToStaticMarkup(
+      composeScene({ layers: [{ component: "text:hero", props: { text: "W".repeat(60) } }] }),
+    );
+    expect(html).toContain(`textLength="${HERO_MAX_WIDTH}"`);
+    // Short all-wide text is sized smaller instead of overflowing.
+    expect(estimatedWidth("WWWWWWWWW", heroFontSize("WWWWWWWWW"))).toBeLessThanOrEqual(
+      HERO_MAX_WIDTH,
+    );
+  });
+
+  it("rejects an unknown colour instead of ignoring it", () => {
+    expect(() =>
+      renderToStaticMarkup(
+        composeScene({ layers: [{ component: "text:hero", props: { text: "X", color: "Red" } }] }),
+      ),
+    ).toThrow(/expected one of/);
   });
 });

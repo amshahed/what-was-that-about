@@ -1,6 +1,6 @@
 // `npm run short <episode-slug-or-dir> <start-beat> <end-beat>` — renders a 9:16 Short.
 //
-// Reads:  episodes/<slug>/notes/factcheck.md  (must contain "Status: ✅ approved")
+// Reads:  episodes/<slug>/notes/factcheck.md  (needs a line reading exactly "Status: ✅ approved")
 //         episodes/<slug>/script.yml
 //         episodes/<slug>/out/alignment.json
 //         episodes/<slug>/audio/narration.wav

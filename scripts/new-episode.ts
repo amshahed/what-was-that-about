@@ -1,10 +1,16 @@
-// `npm run new-episode <book-slug>` — scaffold a new episode directory.
+// `npm run new-episode <book-slug>` — scaffold a new episode directory (book-first workflow).
 //
 // Creates:
-//   episodes/<slug>/seed.md         — book selection + tone tag
-//   episodes/<slug>/notes/research.md  — research + claims to verify
-//   episodes/<slug>/notes/factcheck.md — fact-check gate (must be approved before render)
-//   episodes/<slug>/script.yml       — EDL script stub
+//   episodes/<slug>/seed.md               — YOUR take: summary, explanation, analysis, review (+ tone tag)
+//   episodes/<slug>/notes/source/          — put your copy of the book here (gitignored)
+//   episodes/<slug>/notes/characters.md    — Claude, from the book: looks, roles, chapter refs
+//   episodes/<slug>/notes/concepts.md      — Claude: the book's ideas and terms
+//   episodes/<slug>/notes/plot.md          — Claude: chapter-by-chapter plot + short summary
+//   episodes/<slug>/notes/analysis.md      — Claude's own reading of the book
+//   episodes/<slug>/notes/research.md      — outside sources and the critical landscape
+//   episodes/<slug>/notes/outline.md       — the merged plan for the video (you + Claude)
+//   episodes/<slug>/notes/factcheck.md     — fact-check gate (must be approved before render)
+//   episodes/<slug>/script.yml             — EDL script stub
 
 import path from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -27,15 +33,14 @@ function safeWrite(filePath: string, content: string): void {
 function seed(slug: string): string {
   return `# seed — ${slug}
 
+<!-- YOUR take on the book. Write it before you read Claude's notes, so the two takes stay
+     independent; we merge them in notes/outline.md. Rough is fine — bullets, fragments, rants. -->
+
 ## Book
 Title:
 Author:
 Year:
 Read: yes / partial
-
-## Angle
-<!-- One paragraph: what's YOUR take? What's the interesting or funny hook for this book?
-     This is what separates us from a Wikipedia summary. Be specific. -->
 
 ## Tone tag
 <!-- Pick one: light | balanced | heavy  (PRD §6.1)
@@ -45,18 +50,87 @@ Read: yes / partial
      Also a scheduling lever: read it recently / lots to say → heavy; read it ages ago → light. -->
 tone: balanced
 
-## Runtime target
-<!-- Rough narration target follows from tone (~150 words/min):
-     light: 600–900 words | balanced: 700–1200 | heavy: 1200–1500 -->
+## My summary
+<!-- The story in your words. What happens, who matters. -->
 
-## Key jokes / gags
-<!-- 3–5 concrete bits you definitely want to include. Vague intentions get cut. -->
+## My explanation
+<!-- The confusing parts, explained the way you understood them. -->
+
+## My analysis
+<!-- What the book is really about, open questions, your readings. -->
+
+## My review
+<!-- Honest verdict. Who should read it, who should not. -->
+
+## Must include / gags
+<!-- Bits you definitely want in the video. Vague intentions get cut. -->
 1.
 2.
 3.
 
 ## What NOT to include
-<!-- Scenes or tangents that seem relevant but dilute the angle. Cut early. -->
+<!-- Tangents that dilute the angle. -->
+`;
+}
+
+function characters(slug: string): string {
+  return `# characters — ${slug}
+
+<!-- Claude writes this from the book, in its own words, with chapter references (ch. N).
+     It feeds the character files (episodes/${slug}/characters/<id>.yml) that keep each look
+     the same in every image. One section per character who may appear in the video. -->
+
+## <Character name>
+- **Video role:** main (own look) | background (generic) | cut
+- **Who they are:**
+- **Look from the book:** face, hair, age, height, weight/build — with chapter refs
+- **Clothing / props:**
+- **Quirks / habits:**
+- **Arc:**
+- **Look we add (not in the book):** marked clearly, so the fact-check can tell them apart
+`;
+}
+
+function concepts(slug: string): string {
+  return `# concepts — ${slug}
+
+<!-- Claude: the book's ideas and terms a viewer needs, with chapter refs. -->
+
+## <Concept>
+- **What it is:**
+- **First appears:** ch. N
+- **How it works in the book:** (ch. N)
+- **Introduce when:** setup (needed before the story) | inline (when it first appears)
+- **Visual idea:**
+`;
+}
+
+function plot(slug: string): string {
+  return `# plot — ${slug}
+
+<!-- Claude: chapter by chapter, more detail than the video needs. Chapter refs make the
+     fact-check fast. Ends with a short summary for the video. -->
+
+## Chapter by chapter
+
+### Ch. 1
+
+## Short summary for the video
+`;
+}
+
+function analysis(slug: string): string {
+  return `# analysis — ${slug}
+
+<!-- Claude's own reading. Written without seeing seed.md; we merge in outline.md. -->
+
+## Open questions the book leaves
+
+## Themes
+
+## Interpretations
+
+## Review points
 `;
 }
 
@@ -64,17 +138,44 @@ function research(slug: string): string {
   return `# research — ${slug}
 
 ## Claims to verify
-<!-- List every factual claim from the script draft that needs verification.
-     Each line: [source needed] The claim as written in the script. -->
+<!-- Every factual claim from the script draft. Each line: [source needed] The claim as written. -->
 
 ## Verified facts
-<!-- Move items here once sourced. Include: claim, source, URL/page. -->
+<!-- Move items here once sourced. Include: claim, source (book chapter, or URL/page). -->
+
+## Critical landscape
+<!-- Common readings, author background, what other analyses miss. Synthesize; never copy. -->
 
 ## Cut ideas
 <!-- Good ideas that don't fit the angle. Park here, not in the script. -->
 
 ## Sources
-<!-- Key references used in research. -->
+`;
+}
+
+function outline(slug: string): string {
+  return `# outline — ${slug}
+
+<!-- The merged plan for the video: your take (seed.md) + Claude's notes. Agree on this before
+     the script. Sections follow PRD §6.4. -->
+
+## Angle
+
+## Cast in the video
+<!-- Main characters get an own look (characters/<id>.yml); everyone else is generic. Keep it small. -->
+
+## Sections
+<!-- Under each section: what it covers, characters/concepts introduced here, ~N beats. -->
+### cold-open
+### spoiler-warn-and-setup
+<!-- Introduce only what the story needs first; everything else inline, when it appears. -->
+### recap
+### analysis
+### verdict
+<!-- From seed.md "My review" + Claude's review points (notes/analysis.md). -->
+
+## Visual style for this episode
+<!-- Channel look (shared/style.yml), or an episode look in episodes/${slug}/style.yml. -->
 `;
 }
 
@@ -83,9 +184,10 @@ function factcheck(slug: string): string {
 
 Status: ⏳ pending
 
-<!-- Change to "Status: ✅ approved" ONLY after every claim below is verified.
+<!-- Change the status line above to the approved one (see docs/episode-workflow.md) ONLY after
+     every claim below is verified.
      The render pipeline BLOCKS on this line — assemble and short will not run without it.
-     See docs/episode-workflow.md, Stage 3b, for the fact-check protocol. -->
+     See docs/episode-workflow.md, Stage 3b. Use the chapter refs in notes/plot.md. -->
 
 ## Checks
 
@@ -100,9 +202,7 @@ Status: ⏳ pending
 
 function scriptStub(slug: string): string {
   return `# Episode script — ${slug}
-# See kit/SCRIPT.md for the full tag grammar and component catalogue.
-# Run \`npm run align <slug>\` after recording narration.
-# Run \`npm run assemble <slug>\` to render the rough cut.
+# See kit/SCRIPT.md for the schema and docs/episode-workflow.md for the steps.
 #
 # Sections (PRD §6.4): cold-open → spoiler-warn-and-setup → recap → analysis → verdict.
 # Mark them with YAML comments like the one below; the parser does not read [SECTION] tags yet.
@@ -113,35 +213,24 @@ tone: balanced
 beats:
   # --- SECTION: cold-open ---
   - narration: |
-      <!-- First line of narration. Hook the viewer in the first sentence. -->
+      First line of narration. Hook the viewer in the first sentence.
     scene:
-      layers:
-        - component: bg:cave-office   # replace with your opening scene
-        - component: actor:poseidon
-          props: { x: 760, y: 430, pose: sitting }
+      # AI still: action, expression, setting. Characters' looks come from characters/<id>.yml.
+      image: "a tired man argues with his front door; setting: a small cluttered apartment"
+      # cast: [joe-chip]
     tags: [HOLD]
 
   - narration: |
-      <!-- Main body beat. One idea per beat — don't stack multiple points here. -->
+      A text beat: one big word or number fills the frame.
     scene:
       layers:
-        - component: bg:sea-glory
-        - component: actor:poseidon
-          props: { x: 940, y: 300, pose: glory }
+        - component: bg:paper
+        - component: text:hero
+          props: { text: "HALF-LIFE", sub: "(not the video game)", color: red }
     tags: [ZOOM]
 
-  - narration: |
-      <!-- Punch line beat. The comedic payoff. -->
-    scene:
-      layers:
-        - component: bg:office-wall
-        - component: actor:poseidon
-          props: { x: 820, y: 360, pose: tie }
-    tags: ["SFX:record scratch"]
-
-  # Add more beats here. Keep each beat to one visual idea.
+  # Add more beats. One idea per beat.
   # Tags: [HOLD] | [ZOOM] | ["SFX:record scratch"] | ["SFX:boing"] | ["SFX:ding"] | ["SFX:whoosh"]
-  # See shared/assets.md for the full SFX catalogue.
 `;
 }
 
@@ -151,7 +240,9 @@ function main(): void {
 
   const slugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
   if (!slugPattern.test(slug)) {
-    console.error(`book-slug must be kebab-case (lowercase letters, numbers, hyphens): got "${slug}"`);
+    console.error(
+      `book-slug must be kebab-case (lowercase letters, numbers, hyphens): got "${slug}"`,
+    );
     process.exit(2);
   }
 
@@ -164,25 +255,31 @@ function main(): void {
     console.log(`scaffolding: ${path.relative(process.cwd(), episodeDir)}/`);
   }
 
-  mkdirSync(path.join(episodeDir, "notes"), { recursive: true });
-  mkdirSync(path.join(episodeDir, "audio"), { recursive: true });
-  mkdirSync(path.join(episodeDir, "out"), { recursive: true });
+  for (const dir of ["notes", path.join("notes", "source"), "characters", "audio", "out"]) {
+    mkdirSync(path.join(episodeDir, dir), { recursive: true });
+  }
 
   safeWrite(path.join(episodeDir, "seed.md"), seed(slug));
+  safeWrite(path.join(episodeDir, "notes", "characters.md"), characters(slug));
+  safeWrite(path.join(episodeDir, "notes", "concepts.md"), concepts(slug));
+  safeWrite(path.join(episodeDir, "notes", "plot.md"), plot(slug));
+  safeWrite(path.join(episodeDir, "notes", "analysis.md"), analysis(slug));
   safeWrite(path.join(episodeDir, "notes", "research.md"), research(slug));
+  safeWrite(path.join(episodeDir, "notes", "outline.md"), outline(slug));
   safeWrite(path.join(episodeDir, "notes", "factcheck.md"), factcheck(slug));
   safeWrite(path.join(episodeDir, "script.yml"), scriptStub(slug));
 
   console.log("");
-  console.log("next steps:");
-  console.log(`  1. Fill in episodes/${slug}/seed.md — angle + tone tag`);
-  console.log(`  2. Draft episodes/${slug}/script.yml — EDL beats`);
-  console.log(`  3. Fill in episodes/${slug}/notes/research.md — verify all claims`);
-  console.log(`  4. Set "Status: ✅ approved" in notes/factcheck.md`);
-  console.log(`  5. Record narration → episodes/${slug}/audio/narration.wav`);
-  console.log(`  6. npm run align ${slug}`);
-  console.log(`  7. npm run assemble ${slug}`);
-  console.log("See docs/episode-workflow.md for the full workflow.");
+  console.log("next steps (docs/episode-workflow.md):");
+  console.log(`  1. Put your copy of the book in episodes/${slug}/notes/source/ (gitignored)`);
+  console.log(
+    `  2. You: write your take in episodes/${slug}/seed.md (before reading Claude's notes)`,
+  );
+  console.log("  3. Claude: reads the book, writes notes/characters, concepts, plot, analysis");
+  console.log("  4. Together: merge into notes/outline.md, then the script");
+  console.log('  5. You: fact-check → "Status: ✅ approved" in notes/factcheck.md');
+  console.log(`  6. npm run generate-scenes ${slug} → review → record narration`);
+  console.log(`  7. npm run align ${slug} → npm run assemble ${slug}`);
 }
 
 main();
