@@ -89,6 +89,10 @@ def main():
     look_arg = sys.argv[2] if len(sys.argv) > 2 else default_look(sys.argv[1])
     resolved = resolve_look(look_arg)
     look, style = resolved["name"], resolved["style"]
+    if look == "custom":  # a complete style file: name its refs folder after the file
+        look = os.path.splitext(os.path.basename(resolved["file"]))[0]
+        if look == "style":  # an episode's style.yml → the episode's name
+            look = os.path.basename(os.path.dirname(os.path.abspath(resolved["file"])))
     px = style.get("pixelate")
     print(f"look: {look} ({look_arg})" + (f" · pixelate {px['factor']}x, {px['colors']} colors" if px else ""), flush=True)
     template = json.load(open(WORKFLOW, encoding="utf-8"))

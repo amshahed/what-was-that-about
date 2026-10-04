@@ -44,7 +44,7 @@ People who **have read the book** (or are reading it / don't mind spoilers) and 
 ## 6. Content design
 
 ### 6.0 Visual storytelling principle (load-bearing)
-**The images carry the message.** The narrator's voice and the picture on screen work together to land *every* point — humor, opinion, contrast, important note, emphasis, whatever. The visual vocabulary is therefore **unbounded**: not locked to character scenes. A beat's image can be a scene, a giant pull-quote, a graph, an arrow-and-pointer diagram, a single huge question mark, a bold number filling the frame — whatever best supports what the voice is saying. The episode's look (a preset such as the cartoon house style, or a look chosen for the book — see §8.1) is the *aesthetic*; it is **not** a restriction on *what* can be on screen.
+**The images carry the message.** The narrator's voice and the picture on screen work together to land *every* point — humor, opinion, contrast, important note, emphasis, whatever. The visual vocabulary is therefore **unbounded**: not locked to character scenes. A beat's image can be a scene, a giant pull-quote, a graph, an arrow-and-pointer diagram, a single huge question mark, a bold number filling the frame — whatever best supports what the voice is saying. The episode's look (a preset such as the default cartoon look, or a look chosen for the book — see §8.1) is the *aesthetic*; it is **not** a restriction on *what* can be on screen.
 
 > **Changed 2026-09-26:** the original visuals were code-drawn SVG stick figures (Rough.js). They looked too primitive. Character and scene images are now **AI-generated stills, made locally** (§8.1). Text-heavy beats stay code-rendered, because image models draw text badly.
 

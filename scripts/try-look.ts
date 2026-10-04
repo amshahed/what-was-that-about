@@ -70,14 +70,16 @@ async function main() {
   }
   const episodeDir = resolveEpisodeDir(args.slug);
   // "episode" → the episode's own look. Output folders use the preset name or the file's base name.
-  const looks = args.looks.map((arg) =>
-    arg === "episode"
-      ? { id: "episode", ...loadLook(episodeDir) }
-      : {
-          id: arg.endsWith(".yml") ? path.basename(arg, ".yml") : path.basename(arg),
-          ...resolveLookArg(arg),
-        },
-  );
+  const used = new Set<string>();
+  const looks = args.looks.map((arg) => {
+    const look = arg === "episode" ? loadLook(episodeDir) : resolveLookArg(arg);
+    // A unique folder name per column, even for two files with the same base name.
+    const base = arg === "episode" ? "episode" : path.basename(arg, ".yml");
+    let id = base;
+    for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
+    used.add(id);
+    return { id, ...look };
+  });
 
   const scriptPath = requireFile(
     path.join(episodeDir, "script.yml"),
@@ -121,14 +123,15 @@ async function main() {
   );
 
   const outDir = path.join(episodeDir, "out");
-  // A fresh folder per look, so no image from an earlier run shows up as this run's.
-  for (const look of looks) {
-    rmSync(path.join(outDir, "looks", look.id), { recursive: true, force: true });
-  }
   const done = new Map<string, string>();
   const client = new ComfyClient(process.env.COMFY_URL ?? DEFAULT_COMFY_URL);
   await startComfyIfLocal(client);
   const { version } = await client.preflight(templateModels(workflow.template));
+  // A fresh folder per look (only once the server answers), so no image from an earlier run
+  // shows up as this run's.
+  for (const look of looks) {
+    rmSync(path.join(outDir, "looks", look.id), { recursive: true, force: true });
+  }
   console.log(
     `ComfyUI ${version} at ${client.baseUrl} · ${jobs.length} images (${looks.length} looks × ${probes.length} beats)`,
   );
