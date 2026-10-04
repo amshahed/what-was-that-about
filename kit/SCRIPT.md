@@ -15,7 +15,7 @@ beats:
   - narration: string      # what the narrator says (multiline OK)
     scene:
       layers:              # ≥1 layer, painted back-to-front
-        - component: string       # registered kit id (bg:..., actor:..., prop:..., caption)
+        - component: string       # registered kit id (bg:..., text:..., prop:...)
           props: { ... }          # untyped; the component's adapter validates at render time
       caption: string?     # optional caption bar at the top (y 24–104 of 1080; keep that band clear)
     tags: [string]?        # optional list — see Tag grammar below
@@ -28,7 +28,7 @@ A canonical example lives at [`episodes/sample/script.yml`](../episodes/sample/s
 ```yaml
     scene:
       image: string          # what the image shows: action, expression, setting
-      cast: [string]?        # ≤ 3 character ids (shared/characters/<id>.yml), left to right
+      cast: [string]?        # ≤ 3 character ids (characters/<id>.yml or shared/characters/), left to right
       seed: number?          # integer 0…2^32-1; pins a take (set by --pick)
       caption: string?
 ```

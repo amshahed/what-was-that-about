@@ -2,13 +2,13 @@
 
 Code-defined, deterministic, hand-drawn-style components that any scene can compose.
 
-> **Scope changed (2026-09-26):** character and scene images now come from local AI stills
-> (see [ADR 0002](../docs/adr/0002-visuals-local-ai-stills.md)). The kit stays for **text-hero
-> beats, diagrams and overlays**, where exact text matters. The stick-figure actors below remain
-> for old scripts and tests; do not add new character art here.
+> **Scope (ADR 0002):** characters and scenes come from local AI stills. The kit covers
+> **text-hero beats, diagrams and overlays**, where exact text matters. The old stick-figure actors
+> and the Poseidon demo shots were removed (2026-10-04).
 
 ## Concept
-A **scene** is data: a `SceneSpec` is an ordered list of **layers**, each naming a registered **component** by id and passing untyped props. `composeScene(spec)` looks up each component in the **registry** and renders the layers back-to-front. The script parser (#5) and the stills batch (#6) speak this format.
+
+A **scene** is data: a `SceneSpec` is an ordered list of **layers**, each naming a registered **component** by id and passing untyped props. `composeScene(spec)` looks up each component in the **registry** and renders the layers back-to-front. The script parser and `render-script` speak this format.
 
 ```ts
 import { composeScene, type SceneSpec } from "./scene";
@@ -16,38 +16,39 @@ import "./library"; // side-effect: registers every component
 
 const spec: SceneSpec = {
   layers: [
-    { component: "bg:office-wall" },
-    { component: "actor:poseidon", props: { x: 820, y: 360, pose: "tie", tie: true } },
-    { component: "prop:watch", props: { x: 850, y: 372 } },
+    { component: "bg:paper" },
+    {
+      component: "text:hero",
+      props: { text: "HALF-LIFE", sub: "(not the video game)", color: "red" },
+    },
   ],
-  caption: "Now he rules... a 3 p.m. sync.",
+  caption: "Ella is technically still available for comment.",
 };
 ```
 
 `SceneCanvas` (in `render/remotion/`) wraps `composeScene` in a Remotion `<Scene>` so it can render in a video pipeline.
 
 ## Catalogue (current)
-| Id | Kind | Notable props |
-|---|---|---|
-| `bg:cave-office` | background | — |
-| `bg:sea-glory` | background | — |
-| `bg:office-wall` | background | — |
-| `actor:poseidon` | actor | `x, y, pose ("sitting"\|"glory"\|"tie"), beard, longHair, tie` |
-| `actor:narrator` | actor | `x, y, pose, beard, tie` *(placeholder — restyle later)* |
-| `prop:trident` | prop | `cx, topY, bottomY` |
-| `prop:desk` | prop | `x, y, w, h` |
-| `prop:papers` | prop | `x, y` |
-| `prop:pen` | prop | `x, y` |
-| `prop:watch` | prop | `x, y` |
-| `prop:wall-clock` | prop | `x, y` |
-| `prop:plant` | prop | `x, y` |
-| `caption` | overlay | `text` *(auto-appended by `spec.caption`; bar at the top of the frame)* |
+
+| Id                | Kind       | Notable props                                                                       |
+| ----------------- | ---------- | ----------------------------------------------------------------------------------- |
+| `bg:paper`        | background | — _(plain paper, for text beats)_                                                   |
+| `bg:office-wall`  | background | —                                                                                   |
+| `text:hero`       | text       | `text`, `sub?`, `color? ("ink"\|"red"\|"sea"\|"gold")` — size shrinks for long text |
+| `prop:desk`       | prop       | `x, y, w, h`                                                                        |
+| `prop:papers`     | prop       | `x, y`                                                                              |
+| `prop:pen`        | prop       | `x, y`                                                                              |
+| `prop:watch`      | prop       | `x, y`                                                                              |
+| `prop:wall-clock` | prop       | `x, y`                                                                              |
+| `prop:plant`      | prop       | `x, y`                                                                              |
+| `caption`         | overlay    | `text` _(auto-appended by `spec.caption`; bar at the top of the frame)_             |
 
 Stage is **1920×1080**, origin top-left.
 
 ## Adding a new component
+
 1. **Implement** a React function in `kit/primitives/` (or extend an existing file). Use the `R*` helpers in `kit/rough/rough.tsx` for the hand-drawn look — they're seeded, so output is **deterministic** (same input ⇒ same character every render — this is the basis for recurring-character gags).
-2. **Register** it in `kit/library.tsx` under a canonical id (`bg:` / `actor:` / `prop:` namespace) using the `num/str/bool/oneOf` helpers from `params.ts` for prop extraction:
+2. **Register** it in `kit/library.tsx` under a canonical id (`bg:` / `text:` / `prop:` namespace) using the `num/str/bool/oneOf` helpers from `params.ts` for prop extraction:
 
    ```tsx
    register("prop:coffee", (p) => <Coffee x={num(p.x)} y={num(p.y)} steam={bool(p.steam, true)} />);
@@ -57,4 +58,5 @@ Stage is **1920×1080**, origin top-left.
 4. **Test** that the same props yield identical markup (see `scene.test.ts` for the pattern).
 
 ## Determinism
-Rough.js is seeded (`SEED` in `kit/rough/style.ts`). The same shape with the same seed always produces the same path geometry — that's why "office Poseidon" is recognisably the same guy as "glorious Poseidon" three shots later. Don't introduce per-call randomness in components.
+
+Rough.js is seeded (`SEED` in `kit/rough/style.ts`). The same shape with the same seed always produces the same path geometry, so a beat renders identically every time. Don't introduce per-call randomness in components.

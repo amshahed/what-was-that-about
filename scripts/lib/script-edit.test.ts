@@ -7,8 +7,8 @@ beats:
   # the opener
   - narration: hi
     scene:
-      image: "Poseidon reads"   # keep this comment
-      cast: [poseidon]
+      image: "Joe reads"   # keep this comment
+      cast: [joe-chip]
     tags: [ZOOM]
 `;
 
@@ -26,8 +26,8 @@ describe("setSceneSeed", () => {
   });
 
   it("handles flow-style scenes", () => {
-    const flow = `id: ep\ntone: light\nbeats:\n  - narration: hi\n    scene: { image: "x", cast: [poseidon] }\n`;
-    expect(setSceneSeed(flow, 0, 5)).toContain(`scene: { image: "x", seed: 5, cast: [poseidon] }`);
+    const flow = `id: ep\ntone: light\nbeats:\n  - narration: hi\n    scene: { image: "x", cast: [joe-chip] }\n`;
+    expect(setSceneSeed(flow, 0, 5)).toContain(`scene: { image: "x", seed: 5, cast: [joe-chip] }`);
   });
 
   it("keeps CRLF line endings", () => {

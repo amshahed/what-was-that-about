@@ -15,14 +15,14 @@ beats:
     scene:
       layers:
         - component: bg:office-wall
-        - component: actor:poseidon
+        - component: prop:desk
           props: { x: 800, y: 400, pose: tie, tie: true }
       caption: "Just a 3pm sync."
     tags: [HOLD, ZOOM, "SFX:record-scratch", "SFX:boing"]
   - narration: "Another beat."
     scene:
       layers:
-        - component: bg:sea-glory
+        - component: bg:paper
 `;
 
 describe("parseScript — happy path", () => {
@@ -51,7 +51,7 @@ describe("parseScript — happy path", () => {
     const s = parseScript(VALID);
     expect(kit(s.beats[0]!.scene).layers.map((l) => l.component)).toEqual([
       "bg:office-wall",
-      "actor:poseidon",
+      "prop:desk",
     ]);
   });
 
@@ -129,7 +129,7 @@ describe("parseScript — errors", () => {
     const e = err as ScriptParseError;
     expect(e.message).toContain("unknown component");
     expect(e.message).toContain("registered:");
-    expect(e.message).toContain("actor:poseidon"); // proves library is loaded
+    expect(e.message).toContain("text:hero"); // proves library is loaded
   });
 
   it("rejects unknown tag", () => {
@@ -174,7 +174,7 @@ describe("parseScript — sample episode", () => {
     expect(script.beats[0]!.hold).toBe(true);
     expect(script.beats[1]!.zoom).toBe(true);
     expect(script.beats[2]!.sfx).toEqual(["record-scratch"]);
-    expect(script.beats[3]!.scene).toMatchObject({ kind: "image", cast: ["poseidon"] });
+    expect(script.beats[3]!.scene).toMatchObject({ kind: "image", cast: [] });
     expect(script.beats[4]!.scene).toMatchObject({ kind: "image", cast: [] });
   });
 });
@@ -182,7 +182,7 @@ describe("parseScript — sample episode", () => {
 describe("parseScript — AI-still beats", () => {
   const wrap = (scene: string) =>
     `id: x\ntone: light\nbeats:\n  - narration: hi\n    scene: ${scene}\n`;
-  const chars = { characters: new Set(["poseidon", "joe-chip"]) };
+  const chars = { characters: new Set(["runciter", "joe-chip"]) };
   const expectThrow = (yaml: string, pathFragment: string, msgFragment: string) => {
     let err: unknown;
     try {
@@ -197,13 +197,13 @@ describe("parseScript — AI-still beats", () => {
 
   it("parses image, cast, seed and caption", () => {
     const s = parseScript(
-      wrap(`{ image: "Poseidon reads", cast: [poseidon], seed: 7, caption: "Hm." }`),
+      wrap(`{ image: "Joe reads", cast: [joe-chip], seed: 7, caption: "Hm." }`),
       chars,
     );
     expect(s.beats[0]!.scene).toEqual({
       kind: "image",
-      image: "Poseidon reads",
-      cast: ["poseidon"],
+      image: "Joe reads",
+      cast: ["joe-chip"],
       seed: 7,
       caption: "Hm.",
     });
@@ -227,8 +227,8 @@ describe("parseScript — AI-still beats", () => {
       "$.beats[0].scene.seed",
       "unknown scene field",
     ],
-    [`{ image: "x", cast: [Poseidon] }`, "$.beats[0].scene.cast[0]", "kebab-case"],
-    [`{ image: "x", cast: [poseidon, poseidon] }`, "$.beats[0].scene.cast[1]", "listed twice"],
+    [`{ image: "x", cast: [JoeChip] }`, "$.beats[0].scene.cast[0]", "kebab-case"],
+    [`{ image: "x", cast: [joe-chip, joe-chip] }`, "$.beats[0].scene.cast[1]", "listed twice"],
     [`{ image: "x", cast: [a, b, c, d] }`, "$.beats[0].scene.cast", "at most 3"],
     [`{ image: "x", seed: -1 }`, "$.beats[0].scene.seed", "integer from 0"],
     [`{ image: "x", seed: 1.5 }`, "$.beats[0].scene.seed", "integer from 0"],
@@ -237,12 +237,12 @@ describe("parseScript — AI-still beats", () => {
   });
 
   it("checks cast ids against known characters when given", () => {
-    expect(() => parseScript(wrap(`{ image: "x", cast: [posiedon] }`), chars)).toThrow(
-      /unknown character "posiedon" \(known: joe-chip, poseidon\) — add shared\/characters\/posiedon.yml/,
+    expect(() => parseScript(wrap(`{ image: "x", cast: [joe-chp] }`), chars)).toThrow(
+      /unknown character "joe-chp" \(known: joe-chip, runciter\) — add characters\/joe-chp.yml/,
     );
     // Without the option, any well-formed id is accepted.
-    expect(parseScript(wrap(`{ image: "x", cast: [posiedon] }`)).beats[0]!.scene).toMatchObject({
-      cast: ["posiedon"],
+    expect(parseScript(wrap(`{ image: "x", cast: [joe-chp] }`)).beats[0]!.scene).toMatchObject({
+      cast: ["joe-chp"],
     });
   });
 });

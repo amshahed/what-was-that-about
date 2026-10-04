@@ -48,7 +48,7 @@ People who **have read the book** (or are reading it / don't mind spoilers) and 
 
 > **Changed 2026-09-26:** the original visuals were code-drawn SVG stick figures (Rough.js). They looked too primitive. Character and scene images are now **AI-generated stills, made locally** (§8.1). Text-heavy beats stay code-rendered, because image models draw text badly.
 
-**Casting doctrine: cast existing first, custom last.** When a beat needs a character, the default is to **reuse an existing actor** (recurring narrator/mascot such as Poseidon, recurring per-book figures that already have a character file). Only introduce a new custom character when the beat genuinely requires it. Reusable cast is what makes recurring-character gags possible and is a major component of channel identity — every custom character we add dilutes that, so the bar is high.
+**Casting doctrine: cast existing first, custom last.** When a beat needs a character, the default is to **reuse an existing actor** (a recurring channel character, if one exists, or a per-book figure that already has a character file). Only introduce a new custom character when the beat genuinely requires it. Reusable cast is what makes recurring-character gags possible and is a major component of channel identity — every custom character we add dilutes that, so the bar is high.
 
 ### 6.1 Tone system (adaptive, per book)
 Every book gets a **tone tag** in pre-production that sets joke density, runtime, and visual-gag frequency:
@@ -100,9 +100,10 @@ Stages flow **seed → research → script → visuals → audio → assembly �
 | # | Stage | Owner | What happens |
 |---|-------|-------|--------------|
 | 0 | **Book selection** | U | Pick a book the user has read. Assign tone tag. |
-| 1 | **Seed / brain-dump** | U | User dumps his take: summary, hot-takes, the bits that struck him, anything that *must* be in there. |
-| 2 | **Research & synthesis** | C | Claude combines own knowledge + a web research pass (Wikipedia, study guides, essays, Reddit, YouTube) to map the "landscape take" and spot angles others missed. Synthesizes — never copies. |
-| 3 | **Script draft** | C | Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. Each beat gets an **image prompt** and its cast list. |
+| 1 | **Your take** | U | User writes their own summary, explanation, analysis and review in `seed.md` — before reading Claude's notes, so the two takes stay independent. User puts their copy of the book in `notes/source/` (gitignored). |
+| 2 | **Book notes & research** | C | Claude reads the book cover to cover and writes `notes/characters.md` (looks, roles, arcs), `concepts.md`, `plot.md` (chapter by chapter) and `analysis.md`, in its own words with chapter references; plus a web research pass for the critical landscape (`research.md`). Synthesizes — never copies. |
+| 2b | **Merge → outline** | C + U | Both takes merged into `notes/outline.md`: angle, small cast, sections; only the essentials introduced in the setup, the rest inline. Main characters get character files and approved reference sets. |
+| 3 | **Script draft** | C + U | Claude drafts from the outline, then we edit to final. Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. Each beat gets an **image prompt** and its cast list. |
 | 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file contains `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
 | 4 | **Visual generation** | C + U | `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat, with a review page (`out/scenes.html`). Text-hero beats render from the code kit. User names the stills that miss; Claude re-rolls them (`--reroll`, 3 candidates each) and keeps the chosen take (`--pick`, pins the seed). See §8.1. |
 | 5 | **Audio recording** | U | User records himself reading the approved script. **Audio contract:** WAV, mono, 44.1 kHz, 16-bit, peak in `-6` to `-3` dBFS, quiet room (see §8.3). |
@@ -129,8 +130,7 @@ The visual + assembly layers are **real code living in this repo** (GitHub: `ams
 - **Engine:** **ComfyUI** (Windows portable build) running **Flux.1 Dev, GGUF Q5_K_S** quant (fits 10 GB VRAM), with T5-XXL fp8 + CLIP-L text encoders and the Flux VAE. About 50 s per 1344×768 image.
 - **Local, not a cloud API:** zero per-image cost, full control, privacy.
 - **Aesthetic:** cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack): thick clean black outlines, flat bright colors, minimal shading, simple shapes. A fixed style prompt holds it. This *is* the brand look.
-- **Character consistency:** each recurring character has a **character file** with a locked text description that the generator adds to every prompt that casts that character. Prompt-only consistency is good for build, hair, outfit and props; it is weak for precise hand poses. Planned upgrades, in order: **Poseidon LoRA** trained on the approved reference set → **IP-Adapter** → **ControlNet** for pose. Target: ~95% consistency.
-- **Poseidon (locked "for now", 2026-09-26):** stocky, barrel-chested, round belly, thick arms; huge fluffy white beard and wild spiky white hair; bushy white brows; big round pink nose; teal-blue toga over one shoulder, knee-length; bare feet; all-gold trident. Reference prompts: `tools/comfyui/prompts/poseidon_refs.py`.
+- **Character consistency:** each recurring character has a **character file** with a locked text description that the generator adds to every prompt that casts that character. Prompt-only consistency is good for build, hair, outfit and props; it is weak for precise hand poses. Planned upgrades, in order: **character LoRA** trained on an approved reference set → **IP-Adapter** → **ControlNet** for pose. Target: ~95% consistency.
 - **Text-hero and diagram beats** (§9.1) stay **code-rendered** from the existing kit (`kit/`), because image models draw text badly.
 - **Composition:** each script beat → one image prompt + cast list → one PNG in `episodes/<slug>/scenes/`. Re-roll by changing the seed or the prompt; pin a seed to keep a take.
 - **Built (V2, #29):** prompt = `shared/style.yml` prefix → character descriptions (`shared/characters/*.yml`; 2–3 characters get short descriptions and left/right positions) → the beat's `image` text → style suffix. 1344×768, 20 steps, guidance 3.5 (~50 s per image). The seed comes from the beat's text, not its position; file names are content-based, so inserting beats keeps existing images. A style, character or workflow change marks stills *stale*: `generate-scenes` remakes them, `assemble` warns and still renders. Remotion draws stills cover-fit with 1.04× overscan (trims corner marks).
@@ -168,10 +168,15 @@ what-was-that-about/
   kit/            # code-drawn components (text-hero, diagrams, overlays) + script parser
   episodes/
     <slug>/       # e.g. ubik/
-      seed.md         # user brain-dump
+      seed.md         # user's own take: summary, explanation, analysis, review
       script.yml      # narration + section markers (YAML comments for now) + EDL tags + per-beat images (see §6.4, §8.2)
+      characters/     # this book's cast: <id>.yml (locked looks, text only)
+      style.yml       # optional episode look (overrides shared/style.yml)
       notes/
-        research.md   # Claude's synthesis + sources
+        source/       # the user's copy of the book (gitignored)
+        characters.md concepts.md plot.md analysis.md  # Claude's book notes (own words, chapter refs)
+        outline.md    # merged plan for the video
+        research.md   # outside sources + critical landscape
         factcheck.md  # required gate file — must contain `Status: ✅ approved` before assembly runs
       scenes/         # generated stills, one PNG per beat (gitignored; reproducible from prompt + seed)
       audio/          # WAV mono 44.1k/16-bit, -6..-3 dBFS peak (see §8.3)
@@ -186,7 +191,7 @@ what-was-that-about/
       out/
   render/         # Remotion project + alignment boundary (local faster-whisper; OpenAI API fallback)
   scripts/        # CLI entry points (new-episode, generate-scenes, align, assemble, short)
-  shared/         # character files, tone presets, caption styles, music/SFX, brand tokens
+  shared/         # channel look (style.yml), channel characters, music/SFX, brand tokens
   tools/          # setup recipes for the local GPU tools (ComfyUI, Whisper) — see §8.6
 ```
 
@@ -199,7 +204,7 @@ The repo holds the **recipe** for each tool. The large installs and model files 
 | faster-whisper | `<repo>\.whisper-env` (gitignored) | `tools/whisper/setup.ps1` + `requirements.lock.txt` |
 
 - **ComfyUI rule:** use only the portable build. A manual venv install failed on PyTorch version conflicts.
-- **Remote use:** `C:\ComfyUI\run_nvidia_gpu_lan.bat` listens on `0.0.0.0:8188`. ComfyUI has no login: open TCP 8188 only on a trusted home network (Windows network profile **Private**). `generate-scenes` and `poseidon_refs.py` read the server address from `COMFY_URL` (default `http://127.0.0.1:8188`).
+- **Remote use:** `C:\ComfyUI\run_nvidia_gpu_lan.bat` listens on `0.0.0.0:8188`. ComfyUI has no login: open TCP 8188 only on a trusted home network (Windows network profile **Private**). `generate-scenes` and `character_refs.py` read the server address from `COMFY_URL` (default `http://127.0.0.1:8188`).
 - **Generated images** are not committed. The prompt, seed and pinned models reproduce them.
 - **Character reference images and LoRA files** are not committed either. They stay on the GPU desktop; their prompts and seeds are in `tools/comfyui/prompts/`. Character files (`shared/characters/`) hold text only.
 
@@ -232,8 +237,8 @@ The tiers complement: subtitles handle the unbroken accessibility/retention laye
 
 | Claude (C) | User (U) |
 |------------|----------|
-| Research & synthesis | Pick book + tone tag |
-| Script draft (in voice, EDL-tagged) | Seed brain-dump / take |
+| Read the book; character, concept, plot and analysis notes; research | Pick book + tone tag; supply the book file |
+| Merge the takes; script draft (in voice, EDL-tagged) | Own take (summary, explanation, analysis, review); script edits |
 | Build & maintain image generator, character files, code kit | **Fact-check script (required)** |
 | Write image prompts & generate all stills | Review stills (taste) + record audio |
 | Build & run assembly pipeline | Light comedic-timing polish |
@@ -275,7 +280,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 |------|------------|
 | **Factual errors** tank credibility | Required user fact-check gate (§7, 3b); cross-check vs. sources in research. |
 | **Pipeline too high-effort** → user quits | Effort-as-gate (§13); automate aggressively; measure ep#1 vs ep#2 effort. |
-| **Character drift between shots** | Locked character files; approved reference set; then Poseidon LoRA → IP-Adapter → ControlNet (§8.1). |
+| **Character drift between shots** | Locked character files; approved reference set; then character LoRA → IP-Adapter → ControlNet (§8.1). |
 | **AI errors (hands, poses, extra props, stray signatures)** | User reviews stills; re-roll seed or prompt; ControlNet for precise poses. |
 | **Flux.1 Dev license blocks monetized use** | Check the output terms before monetization (§16); fallback: a commercially licensed model (e.g. Flux.1 Schnell, Apache 2.0) with the same nodes — different model file and sampler settings (~4 steps, no guidance). |
 | **Single GPU machine** | Recipes in `tools/` rebuild it on any NVIDIA PC; OpenAI Whisper API fallback for alignment. |
@@ -287,8 +292,8 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 
 ## 18. Open items / deferred (not blocking)
 - **Channel name & handle** — *intentionally deferred*; the repo / working title "What Was That About" is fine for now. Decided not to block design lock on it.
-- **Narrator mascot / persona** — Poseidon is the recurring character; his look is locked "for now" (§8.1) and gets refined during the pilot.
-- **Poseidon LoRA, IP-Adapter, ControlNet** — consistency upgrades (§8.1); do after the pilot shows where prompt-only consistency fails.
+- **Narrator mascot / persona** — none for now. Poseidon was only the tool proof of concept (removed 2026-10-04); each book brings its own cast.
+- **Character LoRA, IP-Adapter, ControlNet** — consistency upgrades (§8.1); do after the pilot shows where prompt-only consistency fails.
 - **Flux.1 Dev output license** — confirm commercial use of outputs before monetization (§16).
 - **Intro / outro bumper** — no default bumper on the pilot (see §9.2); creative-design task deferred.
 - **Thumbnail & title style** guide (SEO + click-through; best-practice defaults for now).
@@ -301,7 +306,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - Exit: a throwaway 60-sec test renders end-to-end from a fake script + scratch audio. **✅ Done (slices #2–#12).**
 
 **Phase 0.5 — Local visual + audio upgrade** *(done)*
-- Done: ComfyUI + Flux GGUF on the GPU desktop; Poseidon look locked "for now"; local faster-whisper env; `tools/` setup recipes.
+- Done: ComfyUI + Flux GGUF on the GPU desktop (tested with a Poseidon proof-of-concept character, since removed); local faster-whisper env; `tools/` setup recipes.
 - Built: local Whisper in `align` (V1, #27); AI scene generation (V2, #29).
 - Exit: the sample episode renders end-to-end with AI stills and local alignment. **✅ Done.**
 
@@ -318,7 +323,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 
 ## 20. Pilot spec — *Ubik*
 - **Tone tag:** **Heavy** (analysis-forward; humor sprinkled).
-- **Angle candidates (to refine from user's seed):** the half-life / reality-decay as the hook; "who's actually dead?"; Ubik-as-product (the spray-can savior) as satire of consumerism/faith; the entropy-as-villain read; the ending's ambiguity (Joe vs. Glen Runciter coins). Cold open plays the corporate-mundane-vs-cosmic gag (very on-brand for the Poseidon-style bit).
+- **Angle candidates (to refine from user's seed):** the half-life / reality-decay as the hook; "who's actually dead?"; Ubik-as-product (the spray-can savior) as satire of consumerism/faith; the entropy-as-villain read; the ending's ambiguity (Joe vs. Glen Runciter coins). Cold open plays the corporate-mundane-vs-cosmic gag.
 - **Deliverable:** ~8–10 min long-form + 1–3 Pipeline A Shorts.
 
 ---

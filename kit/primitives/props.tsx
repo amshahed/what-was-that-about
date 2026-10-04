@@ -3,20 +3,6 @@
 import { RLine, RRect, RCircle, RPolygon, RCurve, solid } from "../rough/rough";
 import { PALETTE } from "../rough/style";
 
-export const Trident = ({ cx, topY, bottomY }: { cx: number; topY: number; bottomY: number }) => {
-  const g = { stroke: PALETTE.gold, strokeWidth: 7 } as const;
-  return (
-    <g>
-      {RLine(cx, topY, cx, bottomY, g)}
-      {/* tines */}
-      {RLine(cx, topY - 6, cx, topY - 52, g)}
-      {RLine(cx, topY - 4, cx - 24, topY - 48, g)}
-      {RLine(cx, topY - 4, cx + 24, topY - 48, g)}
-      {RLine(cx - 26, topY - 6, cx + 26, topY - 6, g)}
-    </g>
-  );
-};
-
 export const Desk = ({ x, y, w, h }: { x: number; y: number; w: number; h: number }) => (
   <g>
     {RRect(x, y, w, 26, solid("#9c6b3b"))}
@@ -46,7 +32,8 @@ export const Papers = ({ x, y }: { x: number; y: number }) => (
   </g>
 );
 
-export const Pen = ({ x, y }: { x: number; y: number }) => RLine(x, y, x + 46, y - 30, { stroke: "#222", strokeWidth: 5 });
+export const Pen = ({ x, y }: { x: number; y: number }) =>
+  RLine(x, y, x + 46, y - 30, { stroke: "#222", strokeWidth: 5 });
 
 export const Watch = ({ x, y }: { x: number; y: number }) => (
   <g>
@@ -78,8 +65,29 @@ export const SadPlant = ({ x, y }: { x: number; y: number }) => (
       solid("#c2703a"),
     )}
     {/* drooping leaves */}
-    {RCurve([[x, y], [x - 30, y - 50], [x - 52, y - 30]], { stroke: "#5a8f4a", strokeWidth: 5 })}
-    {RCurve([[x, y], [x + 28, y - 56], [x + 50, y - 24]], { stroke: "#5a8f4a", strokeWidth: 5 })}
-    {RCurve([[x, y], [x, y - 64], [x + 8, y - 40]], { stroke: "#6fa356", strokeWidth: 5 })}
+    {RCurve(
+      [
+        [x, y],
+        [x - 30, y - 50],
+        [x - 52, y - 30],
+      ],
+      { stroke: "#5a8f4a", strokeWidth: 5 },
+    )}
+    {RCurve(
+      [
+        [x, y],
+        [x + 28, y - 56],
+        [x + 50, y - 24],
+      ],
+      { stroke: "#5a8f4a", strokeWidth: 5 },
+    )}
+    {RCurve(
+      [
+        [x, y],
+        [x, y - 64],
+        [x + 8, y - 40],
+      ],
+      { stroke: "#6fa356", strokeWidth: 5 },
+    )}
   </g>
 );

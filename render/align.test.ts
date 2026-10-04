@@ -131,7 +131,7 @@ describe("alignLocal", () => {
       call = { exe, args };
       return ok(exe, args);
     };
-    const out = await alignLocal("a.wav", "Poseidon. Ubik.", run, allExist);
+    const out = await alignLocal("a.wav", "Joe Chip. Ubik.", run, allExist);
     expect(out.words).toHaveLength(1);
     expect(call!.exe).toBe(LOCAL_PYTHON);
     expect(call!.args).toEqual([
@@ -140,7 +140,7 @@ describe("alignLocal", () => {
       LOCAL_SCRIPT,
       "a.wav",
       "--prompt",
-      "Poseidon. Ubik.",
+      "Joe Chip. Ubik.",
     ]);
   });
 

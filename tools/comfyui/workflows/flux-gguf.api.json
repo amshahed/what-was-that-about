@@ -13,7 +13,7 @@
     "class_type": "CLIPTextEncode",
     "inputs": {
       "clip": ["2", 0],
-      "text": "A cartoon webcomic panel in the style of Cyanide and Happiness: a grumpy middle-aged Greek god Poseidon with a big white beard, bushy eyebrows and a golden trident, wearing a blue toga, sitting on a couch reading a paperback book with a skeptical expression. Thick clean black outlines, flat bright colors, simple shapes, plain light background."
+      "text": "PLACEHOLDER — generate-scenes replaces this with the composed prompt."
     }
   },
   "5": { "class_type": "FluxGuidance", "inputs": { "conditioning": ["4", 0], "guidance": 3.5 } },
