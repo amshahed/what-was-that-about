@@ -55,7 +55,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 ✅ | ⬜ unblocked |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ |
 | #31 | Book-first episode workflow; per-episode characters and style; remove Poseidon | AFK | V2 | 🟩 merged (PR #32) |
-| #33 | Look presets (`shared/styles/`: cartoon, retro-pixel, vintage), `pixelate`, `try-look` | AFK | #31 | 🟨 in progress |
+| #33 | Look presets (`shared/styles/`: cartoon, retro-pixel, vintage), `pixelate`, `try-look` | AFK | #31 | 🟩 merged (PR #34) |
 | V3 | Character LoRA trained on an approved reference set | **HITL** | V2, pilot feedback | ⬜ later |
 | V4 | ControlNet pose control (+ IP-Adapter) for precise poses | AFK | V2 | ⬜ later |
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
