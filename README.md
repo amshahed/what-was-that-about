@@ -62,7 +62,7 @@ Spec-driven, one slice at a time:
 ## Status
 
 - **Phase 0 — pipeline skeleton:** done (slices #2–#12).
-- **Phase 0.5 — local upgrade:** done. Done: ComfyUI + Flux, Whisper env,
+- **Phase 0.5 — local upgrade:** done: ComfyUI + Flux, Whisper env,
   `tools/` recipes, local Whisper in `align` (V1), AI scene generation (V2).
 - **Phase 1 — Ubik pilot (#13):** next. Every step of the pipeline runs.
 

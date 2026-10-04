@@ -28,3 +28,5 @@ in each beat's `image:` text.
 
 **Approve the look** with a reference set before using the character in stills:
 `C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py <file>.yml [style.yml]`
+(an episode character uses its episode's `style.yml` by default; only the style prefix is used, on a
+plain background)

@@ -95,7 +95,7 @@ Sections compose with the EDL tags (`[HOLD]`, `[ZOOM]`, `[SFX]`) inside them —
 
 ## 7. The production pipeline (the system)
 
-Stages flow **seed → research → script → visuals → audio → assembly → shorts → publish.** Ownership: **C** = Claude, **U** = User.
+Stages flow **book → your take + Claude's book notes → outline → script → fact-check → visuals → audio → assembly → shorts → publish.** Ownership: **C** = Claude, **U** = User.
 
 | # | Stage | Owner | What happens |
 |---|-------|-------|--------------|
@@ -129,11 +129,11 @@ The visual + assembly layers are **real code living in this repo** (GitHub: `ams
 - **Stills, not animation.** No lip sync, no talking, no movement. Motion comes from Remotion (Ken Burns, cuts).
 - **Engine:** **ComfyUI** (Windows portable build) running **Flux.1 Dev, GGUF Q5_K_S** quant (fits 10 GB VRAM), with T5-XXL fp8 + CLIP-L text encoders and the Flux VAE. About 50 s per 1344×768 image.
 - **Local, not a cloud API:** zero per-image cost, full control, privacy.
-- **Aesthetic:** cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack): thick clean black outlines, flat bright colors, minimal shading, simple shapes. A fixed style prompt holds it. This *is* the brand look.
+- **Aesthetic:** cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack): thick clean black outlines, flat bright colors, minimal shading, simple shapes. A fixed style prompt holds it. This is the default brand look; an episode may replace it with its own `episodes/<slug>/style.yml` (decision 21), for a look that fits the book.
 - **Character consistency:** each recurring character has a **character file** with a locked text description that the generator adds to every prompt that casts that character. Prompt-only consistency is good for build, hair, outfit and props; it is weak for precise hand poses. Planned upgrades, in order: **character LoRA** trained on an approved reference set → **IP-Adapter** → **ControlNet** for pose. Target: ~95% consistency.
 - **Text-hero and diagram beats** (§9.1) stay **code-rendered** from the existing kit (`kit/`), because image models draw text badly.
 - **Composition:** each script beat → one image prompt + cast list → one PNG in `episodes/<slug>/scenes/`. Re-roll by changing the seed or the prompt; pin a seed to keep a take.
-- **Built (V2, #29):** prompt = `shared/style.yml` prefix → character descriptions (`shared/characters/*.yml`; 2–3 characters get short descriptions and left/right positions) → the beat's `image` text → style suffix. 1344×768, 20 steps, guidance 3.5 (~50 s per image). The seed comes from the beat's text, not its position; file names are content-based, so inserting beats keeps existing images. A style, character or workflow change marks stills *stale*: `generate-scenes` remakes them, `assemble` warns and still renders. Remotion draws stills cover-fit with 1.04× overscan (trims corner marks).
+- **Built (V2, #29):** prompt = style prefix (`episodes/<slug>/style.yml` if present, else `shared/style.yml`) → character descriptions (`episodes/<slug>/characters/*.yml` + `shared/characters/*.yml`; 2–3 characters get short descriptions and left/right positions) → the beat's `image` text → style suffix. 1344×768, 20 steps, guidance 3.5 (~50 s per image). The seed comes from the beat's text, not its position; file names are content-based, so inserting beats keeps existing images. A style, character or workflow change marks stills *stale*: `generate-scenes` remakes them, `assemble` warns and still renders. Remotion draws stills cover-fit with 1.04× overscan (trims corner marks).
 
 ### 8.2 Script-as-Edit-Decision-List
 The script (`episodes/<slug>/script.yml`) is the single source of truth for the edit. Each beat carries: narration text, the image (an AI image prompt + cast list, or a code-kit composition for text-hero beats), and optional tags:
@@ -206,7 +206,7 @@ The repo holds the **recipe** for each tool. The large installs and model files 
 - **ComfyUI rule:** use only the portable build. A manual venv install failed on PyTorch version conflicts.
 - **Remote use:** `C:\ComfyUI\run_nvidia_gpu_lan.bat` listens on `0.0.0.0:8188`. ComfyUI has no login: open TCP 8188 only on a trusted home network (Windows network profile **Private**). `generate-scenes` and `character_refs.py` read the server address from `COMFY_URL` (default `http://127.0.0.1:8188`).
 - **Generated images** are not committed. The prompt, seed and pinned models reproduce them.
-- **Character reference images and LoRA files** are not committed either. They stay on the GPU desktop; their prompts and seeds are in `tools/comfyui/prompts/`. Character files (`shared/characters/`) hold text only.
+- **Character reference images and LoRA files** are not committed either. They stay on the GPU desktop; their prompts and seeds are in `tools/comfyui/prompts/`. Character files (`episodes/<slug>/characters/`, `shared/characters/`) hold text only.
 
 ## 9. Captions, music & SFX
 
@@ -224,7 +224,7 @@ The tiers complement: subtitles handle the unbroken accessibility/retention laye
 
 - **Music:** royalty-free bed, mood-matched to the **tone tag** (one loop-safe bed per tag — Light / Balanced / Heavy — in `shared/music/`; see `shared/assets.md`).
 - **SFX:** small comedic library (boings, record scratches, dings) triggered by `[SFX]` tags.
-- **Palette:** color/brand palette is **unified across the channel** (not tone-driven, not per-book). For AI stills, the fixed style prompt and the character files hold the palette. Brand recognition wins; the tone tag moves the *music* dial, not the *visual palette* dial.
+- **Palette:** color/brand palette is **unified across the channel** by default (not tone-driven). An episode may replace the image look with `episodes/<slug>/style.yml` (decision 21); the brand then stays in captions, text-hero beats and thumbnails. For AI stills, the fixed style prompt and the character files hold the palette. Brand recognition wins; the tone tag moves the *music* dial, not the *visual palette* dial.
 - **Intro / outro bumper:** **no default bumper** on the pilot. A signature bumper is a creative-design task that is intentionally deferred (see §18); shipping the pilot does not depend on it. When designed, it will live in `shared/bumpers/` and slot in via the renderer.
 
 ## 10. Meme strategy
@@ -269,6 +269,8 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 
 ## 16. Legal / copyright / monetization
 - **Book content:** summary + analysis = transformative / fair use. We synthesize, never reproduce the text.
+- **The book file** (the user's own copy in `episodes/<slug>/notes/source/`) is gitignored and never committed or uploaded — the repo is public.
+- **Book notes** (`notes/*.md`) are in Claude's own words with chapter references; at most a few short quoted phrases, and no quoted passages.
 - **Images:** AI-generated locally with **Flux.1 Dev**. The weights use the FLUX.1 [dev] Non-Commercial License; its terms on commercial use of *outputs* must be checked before monetization (open item, §18). Code-kit images are original and fully owned.
 - **Style prompts:** naming other creators' styles is a reference for the look, not a copy. Do not reproduce their characters, logos or panels.
 - **Memes:** house-style regenerations are safe; real images are the risk surface (see §10).
@@ -311,7 +313,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - Exit: the sample episode renders end-to-end with AI stills and local alignment. **✅ Done.**
 
 **Phase 1 — Ubik pilot** *(full pipeline dry-run)*
-- User seed → research → script (**Heavy** tone) → fact-check (`Status: ✅ approved`) → generate + review stills → record → align → assemble → polish → Pipeline A Shorts.
+- Your take + Claude's book notes → outline → script (**Heavy** tone) → fact-check (`Status: ✅ approved`) → generate + review stills → record → align → assemble → polish → Pipeline A Shorts.
 - Exit: a video the user is proud of; effort logged.
 
 **Phase 2 — Buffer & launch**

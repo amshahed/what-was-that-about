@@ -20,7 +20,7 @@ register("text:hero", (p) => (
   <TextHero
     text={str(p.text)}
     sub={p.sub === undefined ? undefined : str(p.sub)}
-    color={oneOf(p.color, COLORS, "ink")}
+    color={p.color === undefined ? "ink" : oneOf(p.color, COLORS)}
   />
 ));
 

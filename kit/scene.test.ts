@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { composeScene, UnknownComponentError, type SceneSpec } from "./scene";
-import { heroFontSize } from "./primitives/TextHero";
+import { estimatedWidth, heroFontSize, HERO_MAX_WIDTH } from "./primitives/TextHero";
 import "./library";
 
 const officeSpec: SceneSpec = {
@@ -50,9 +50,26 @@ describe("text:hero", () => {
     expect(html).toContain("#b23b3b");
   });
 
-  it("shrinks long phrases to fit", () => {
+  it("shrinks long phrases to fit the frame", () => {
     expect(heroFontSize("?")).toBe(260);
-    expect(heroFontSize("Safe when used as directed")).toBeLessThan(120);
+    for (const t of ["SAFE WHEN USED AS DIRECTED", "HALF-LIFE", "UBIK"]) {
+      expect(estimatedWidth(t, heroFontSize(t))).toBeLessThanOrEqual(HERO_MAX_WIDTH);
+    }
     expect(heroFontSize("x".repeat(200))).toBe(72);
+  });
+
+  it("squeezes text that would still overflow", () => {
+    const html = renderToStaticMarkup(
+      composeScene({ layers: [{ component: "text:hero", props: { text: "W".repeat(60) } }] }),
+    );
+    expect(html).toContain(`textLength="${HERO_MAX_WIDTH}"`);
+  });
+
+  it("rejects an unknown colour instead of ignoring it", () => {
+    expect(() =>
+      renderToStaticMarkup(
+        composeScene({ layers: [{ component: "text:hero", props: { text: "X", color: "Red" } }] }),
+      ),
+    ).toThrow(/expected one of/);
   });
 });

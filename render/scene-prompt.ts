@@ -63,8 +63,11 @@ function text(
 }
 
 /** Parse shared/characters/<fileId>.yml. */
-export function parseCharacter(yamlText: string, fileId: string): Character {
-  const where = `characters/${fileId}.yml`;
+export function parseCharacter(
+  yamlText: string,
+  fileId: string,
+  where = `characters/${fileId}.yml`,
+): Character {
   const obj = asRecord(parseYaml(yamlText), where);
   checkKeys(obj, CHARACTER_KEYS, where);
   const id = text(obj, "id", where)!;

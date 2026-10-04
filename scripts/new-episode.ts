@@ -83,7 +83,7 @@ function characters(slug: string): string {
 ## <Character name>
 - **Video role:** main (own look) | background (generic) | cut
 - **Who they are:**
-- **Look from the book:** face, hair, age, height, build — with chapter refs
+- **Look from the book:** face, hair, age, height, weight/build — with chapter refs
 - **Clothing / props:**
 - **Quirks / habits:**
 - **Arc:**
@@ -98,6 +98,7 @@ function concepts(slug: string): string {
 
 ## <Concept>
 - **What it is:**
+- **First appears:** ch. N
 - **How it works in the book:** (ch. N)
 - **Introduce when:** setup (needed before the story) | inline (when it first appears)
 - **Visual idea:**
@@ -164,12 +165,14 @@ function outline(slug: string): string {
 <!-- Main characters get an own look (characters/<id>.yml); everyone else is generic. Keep it small. -->
 
 ## Sections
+<!-- Under each section: what it covers, characters/concepts introduced here, ~N beats. -->
 ### cold-open
 ### spoiler-warn-and-setup
 <!-- Introduce only what the story needs first; everything else inline, when it appears. -->
 ### recap
 ### analysis
 ### verdict
+<!-- From seed.md "My review" + Claude's review points (notes/analysis.md). -->
 
 ## Visual style for this episode
 <!-- Channel look (shared/style.yml), or an episode look in episodes/${slug}/style.yml. -->
@@ -181,7 +184,8 @@ function factcheck(slug: string): string {
 
 Status: ⏳ pending
 
-<!-- Change to "Status: ✅ approved" ONLY after every claim below is verified.
+<!-- Change the status line above to the approved one (see docs/episode-workflow.md) ONLY after
+     every claim below is verified.
      The render pipeline BLOCKS on this line — assemble and short will not run without it.
      See docs/episode-workflow.md, Stage 3b. Use the chapter refs in notes/plot.md. -->
 

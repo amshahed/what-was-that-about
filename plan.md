@@ -54,7 +54,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | V2 (#29) | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | 🟩 merged (PR #30) |
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 ✅ | ⬜ unblocked |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ |
-| #31 | Book-first episode workflow; per-episode characters and style; remove Poseidon | AFK | V2 | 🟩 merged (PR #32) |
+| #31 | Book-first episode workflow; per-episode characters and style; remove Poseidon | AFK | V2 | 🟨 PR #32 open |
 | V3 | Character LoRA trained on an approved reference set | **HITL** | V2, pilot feedback | ⬜ later |
 | V4 | ControlNet pose control (+ IP-Adapter) for precise poses | AFK | V2 | ⬜ later |
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
@@ -112,7 +112,7 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 16. ~~**Poseidon look**~~ → **removed (2026-10-04).** Poseidon was only the proof of concept for the tools; no mascot for now.
 17. **Whisper engine — local faster-whisper** (§8.3), OpenAI API as fallback. Supersedes decision 1.
 18. **Reproducibility — recipes in `tools/`** (§8.6): pinned versions, model checksums, setup scripts. Installs and models stay out of git; generated images are not committed.
-19. **Character reference images stay out of git** (2026-10-03). They live on the GPU desktop; the prompts and seeds in `tools/comfyui/prompts/` reproduce them. Character files in `shared/characters/` hold text only. A trained LoRA file also stays local, in `C:\ComfyUI\ComfyUI\models\loras\`.
+19. **Character reference images stay out of git** (2026-10-03). They live on the GPU desktop; the prompts and seeds in `tools/comfyui/prompts/` reproduce them. Character files in `episodes/<slug>/characters/` and `shared/characters/` hold text only. A trained LoRA file also stays local, in `C:\ComfyUI\ComfyUI\models\loras\`.
 20. **Book-first episode workflow** (2026-10-04): user writes their own take (seed.md); Claude reads the book (user's copy in `notes/source/`, gitignored) and writes characters/concepts/plot/analysis notes in its own words with chapter refs; the takes are merged into `notes/outline.md`, then the script. Setup introduces only the essentials; the rest is introduced inline.
 21. **Per-episode cast and look** (2026-10-04): a book's characters live in `episodes/<slug>/characters/`; an optional `episodes/<slug>/style.yml` replaces the channel look for that episode. Keep the cast small; main characters get approved reference sets.
 

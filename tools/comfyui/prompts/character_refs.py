@@ -4,10 +4,12 @@
 #   C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py <character.yml> [style.yml]
 #
 # <character.yml>: episodes/<slug>/characters/<id>.yml or shared/characters/<id>.yml
-# [style.yml]:     the look to use (default: shared/style.yml; an episode may have its own style.yml)
+# [style.yml]:     the look (default: the episode's style.yml when the character is in
+#                  episodes/<slug>/characters/ and the episode has one, else shared/style.yml).
+#                  Only the style's prefix, steps and guidance are used; the background is plain.
 # Output: ComfyUI's output/refs/<id>/ ; a contact sheet in out/refs/<id>_sheet.jpg (gitignored).
 # Set COMFY_URL to use another machine. Images stay out of git (plan.md decision 19).
-import json, os, sys, time, urllib.parse, urllib.request
+import json, os, sys, time, urllib.error, urllib.parse, urllib.request
 
 import yaml
 
@@ -33,10 +35,24 @@ def load(path):
         return yaml.safe_load(f)
 
 
+def default_style(char_path):
+    """episodes/<slug>/characters/<id>.yml → episodes/<slug>/style.yml if it exists, else the channel look."""
+    episode_style = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(char_path))), "style.yml")
+    if os.path.basename(os.path.dirname(os.path.abspath(char_path))) == "characters" and os.path.isfile(episode_style) \
+            and os.path.abspath(episode_style) != os.path.join(REPO, "shared", "style.yml"):
+        return episode_style
+    return os.path.join(REPO, "shared", "style.yml")
+
+
 def post(wf):
     req = urllib.request.Request(f"{HOST}/prompt", data=json.dumps({"prompt": wf}).encode(),
                                  headers={"Content-Type": "application/json"})
-    return json.load(urllib.request.urlopen(req, timeout=30))["prompt_id"]
+    try:
+        return json.load(urllib.request.urlopen(req, timeout=30))["prompt_id"]
+    except urllib.error.HTTPError as err:
+        raise SystemExit(f"ComfyUI rejected the workflow (HTTP {err.code}): {err.read().decode()[:500]}")
+    except urllib.error.URLError as err:
+        raise SystemExit(f"cannot reach ComfyUI at {HOST} ({err.reason}). Start C:\\ComfyUI\\run_nvidia_gpu_lan.bat or set COMFY_URL.")
 
 
 def main():
@@ -44,7 +60,9 @@ def main():
         print("usage: character_refs.py <character.yml> [style.yml]")
         return 2
     char = load(sys.argv[1])
-    style = load(sys.argv[2] if len(sys.argv) > 2 else os.path.join(REPO, "shared", "style.yml"))
+    style_path = sys.argv[2] if len(sys.argv) > 2 else default_style(sys.argv[1])
+    print(f"style: {os.path.relpath(style_path, REPO)}", flush=True)
+    style = load(style_path)
     template = json.load(open(WORKFLOW, encoding="utf-8"))
     cid = char["id"]
     prefix = f"{style['prefix'].strip()} Character reference sheet: full body, plain light-gray background, no scenery."
@@ -52,7 +70,7 @@ def main():
     for i, (name, pose) in enumerate(SHOTS):
         for v in range(VARIANTS):
             wf = json.loads(json.dumps(template))
-            wf["4"]["inputs"]["text"] = f"{prefix} {char['description'].strip()}, {pose}. No text, unsigned artwork."
+            wf["4"]["inputs"]["text"] = f"{prefix} {char['description'].strip().rstrip('.')}, {pose}. No text, unsigned artwork."
             wf["5"]["inputs"]["guidance"] = style.get("guidance", 3.5)
             wf["7"]["inputs"].update(width=1024, height=1024, batch_size=1)
             wf["8"]["inputs"].update(seed=7000 + i * VARIANTS + v, steps=style.get("steps", 20))

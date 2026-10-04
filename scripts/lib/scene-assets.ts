@@ -43,7 +43,7 @@ function readCharacterDir(
         `character "${id}" is defined twice: ${where.get(id)} and ${file} — rename one`,
       );
     }
-    out.set(id, parseCharacter(readFileSync(file, "utf8"), id));
+    out.set(id, parseCharacter(readFileSync(file, "utf8"), id, file));
     where.set(id, file);
   }
 }
@@ -75,8 +75,11 @@ export function loadStyle(file = STYLE_FILE): SceneStyle {
 
 export function loadWorkflow(file = WORKFLOW_FILE): { template: unknown; hash: string } {
   const template: unknown = JSON.parse(readFileSync(file, "utf8"));
-  // Hash the parsed JSON, so reformatting the file does not mark every still stale.
-  return { template, hash: hashText(JSON.stringify(template)) };
+  // Hash the parsed JSON, so reformatting the file does not mark every still stale; leave out the
+  // placeholder prompt (node 4), which generate-scenes replaces for every beat anyway.
+  const forHash = structuredClone(template) as Record<string, { inputs?: Record<string, unknown> }>;
+  if (forHash["4"]?.inputs) delete forHash["4"].inputs.text;
+  return { template, hash: hashText(JSON.stringify(forHash)) };
 }
 
 export function scenesDir(episodeDir: string): string {
