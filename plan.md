@@ -54,7 +54,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | V2 (#29) | AI scene generation: `image:` beats, character files, `generate-scenes`, assembly uses PNGs | AFK | V0 | 🟩 merged (PR #30) |
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 ✅ | ⬜ unblocked |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ |
-| #31 | Book-first episode workflow; per-episode characters and style; remove Poseidon | AFK | V2 | 🟨 PR #32 open |
+| #31 | Book-first episode workflow; per-episode characters and style; remove Poseidon | AFK | V2 | 🟩 merged (PR #32) |
 | V3 | Character LoRA trained on an approved reference set | **HITL** | V2, pilot feedback | ⬜ later |
 | V4 | ControlNet pose control (+ IP-Adapter) for precise poses | AFK | V2 | ⬜ later |
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
@@ -105,7 +105,7 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 11. **Episode id convention — slug-only** (§8.5).
 12. **Palette — unified across the channel** (§9.2), not tone-driven per book.
 13. **Intro / outro bumper — no default bumper on the pilot** (§9.2, §18); creative-design task deferred.
-14. **Fact-check artifact** (§7 stage 3b, §8.5): `episodes/<slug>/notes/factcheck.md` must contain `Status: ✅ approved` — assembly refuses to run otherwise. Hard render gate.
+14. **Fact-check artifact** (§7 stage 3b, §8.5): `episodes/<slug>/notes/factcheck.md` must have a line reading exactly `Status: ✅ approved` — assembly refuses to run otherwise. Hard render gate.
 
 ### Visual + audio upgrade (2026-09-26 / 2026-10-03)
 15. **Visuals — AI stills, not SVG stick figures** (§8.1). Stills only: no animation, no lip sync. Generated **locally** (no cloud API) with ComfyUI portable + Flux.1 Dev GGUF Q5_K_S. Text-hero beats stay code-rendered.

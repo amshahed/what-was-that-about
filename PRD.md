@@ -102,9 +102,10 @@ Stages flow **book → your take + Claude's book notes → outline → script �
 | 0 | **Book selection** | U | Pick a book the user has read. Assign tone tag. |
 | 1 | **Your take** | U | User writes their own summary, explanation, analysis and review in `seed.md` — before reading Claude's notes, so the two takes stay independent. User puts their copy of the book in `notes/source/` (gitignored). |
 | 2 | **Book notes & research** | C | Claude reads the book cover to cover and writes `notes/characters.md` (looks, roles, arcs), `concepts.md`, `plot.md` (chapter by chapter) and `analysis.md`, in its own words with chapter references; plus a web research pass for the critical landscape (`research.md`). Synthesizes — never copies. |
-| 2b | **Merge → outline** | C + U | Both takes merged into `notes/outline.md`: angle, small cast, sections; only the essentials introduced in the setup, the rest inline. Main characters get character files and approved reference sets. |
+| 2b | **Merge → outline** | C + U | Both takes merged into `notes/outline.md`: angle, small cast, sections; only the essentials introduced in the setup, the rest inline. |
+| 2c | **Cast + looks** | C + U | Main characters get character files (`episodes/<slug>/characters/`) and approved reference sets; optional episode look (`episodes/<slug>/style.yml`). |
 | 3 | **Script draft** | C + U | Claude drafts from the outline, then we edit to final. Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. Each beat gets an **image prompt** and its cast list. |
-| 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file contains `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
+| 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file have a line reading exactly `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
 | 4 | **Visual generation** | C + U | `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat, with a review page (`out/scenes.html`). Text-hero beats render from the code kit. User names the stills that miss; Claude re-rolls them (`--reroll`, 3 candidates each) and keeps the chosen take (`--pick`, pins the seed). See §8.1. |
 | 5 | **Audio recording** | U | User records himself reading the approved script. **Audio contract:** WAV, mono, 44.1 kHz, 16-bit, peak in `-6` to `-3` dBFS, quiet room (see §8.3). |
 | 6 | **Assembly** | C + U | Forced-alignment syncs cuts to actual delivery (**local faster-whisper** on the GPU desktop; the OpenAI Whisper API as fallback — see §8.3); Remotion renders the rough cut (Ken Burns, burned-in captions, music, SFX; -14 LUFS normalization planned, not built yet). User does a **light polish** pass only on comedic-timing beats. |
@@ -177,7 +178,7 @@ what-was-that-about/
         characters.md concepts.md plot.md analysis.md  # Claude's book notes (own words, chapter refs)
         outline.md    # merged plan for the video
         research.md   # outside sources + critical landscape
-        factcheck.md  # required gate file — must contain `Status: ✅ approved` before assembly runs
+        factcheck.md  # required gate file — must have a line reading exactly `Status: ✅ approved` before assembly runs
       scenes/         # generated stills, one PNG per beat (gitignored; reproducible from prompt + seed)
       audio/          # WAV mono 44.1k/16-bit, -6..-3 dBFS peak (see §8.3)
       out/            # alignment, rough cut, final cut, Shorts (all gitignored)

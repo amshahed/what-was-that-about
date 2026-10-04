@@ -21,7 +21,6 @@ episodes/**/notes/source/
 *.wav
 *.mp3
 *.png
-!**/samples/**.png
 
 # env & secrets
 .env

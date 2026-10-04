@@ -1,6 +1,6 @@
 // `npm run assemble <episode-slug-or-dir>` — assembles the synced rough-cut MP4.
 //
-// Reads:  episodes/<slug>/notes/factcheck.md  (must contain "Status: ✅ approved")
+// Reads:  episodes/<slug>/notes/factcheck.md  (needs a line reading exactly "Status: ✅ approved")
 //         episodes/<slug>/script.yml
 //         episodes/<slug>/out/alignment.json
 //         episodes/<slug>/audio/narration.wav

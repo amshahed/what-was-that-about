@@ -63,6 +63,10 @@ describe("text:hero", () => {
       composeScene({ layers: [{ component: "text:hero", props: { text: "W".repeat(60) } }] }),
     );
     expect(html).toContain(`textLength="${HERO_MAX_WIDTH}"`);
+    // Short all-wide text is sized smaller instead of overflowing.
+    expect(estimatedWidth("WWWWWWWWW", heroFontSize("WWWWWWWWW"))).toBeLessThanOrEqual(
+      HERO_MAX_WIDTH,
+    );
   });
 
   it("rejects an unknown colour instead of ignoring it", () => {

@@ -14,17 +14,25 @@ export type HeroColor = keyof typeof HERO_COLORS;
 
 /** Widest the text may be (the stage is 1920 wide). */
 export const HERO_MAX_WIDTH = 1700;
-// Average glyph width / font size for bold Comic Sans uppercase (measured ~0.7; wide letters more).
-const GLYPH = 0.75;
+// Glyph width / font size for bold Comic Sans: wide letters, narrow ones, and the rest (~0.75).
+const WIDE = /[WMwm@]/;
+const NARROW = /[iIl1|.,:;'!\s-]/;
+
+/** Sum of per-character widths, in units of the font size. */
+function ems(text: string): number {
+  let w = 0;
+  for (const ch of text) w += WIDE.test(ch) ? 1.05 : NARROW.test(ch) ? 0.4 : 0.75;
+  return Math.max(w, 0.75);
+}
 
 /** Font size for the main text: as big as fits, 72–260 px. */
 export function heroFontSize(text: string): number {
-  return Math.max(72, Math.min(260, Math.floor(HERO_MAX_WIDTH / Math.max(text.length, 1) / GLYPH)));
+  return Math.max(72, Math.min(260, Math.floor(HERO_MAX_WIDTH / ems(text))));
 }
 
 /** Estimated rendered width at a font size. */
 export function estimatedWidth(text: string, fontSize: number): number {
-  return text.length * fontSize * GLYPH;
+  return ems(text) * fontSize;
 }
 
 /**
