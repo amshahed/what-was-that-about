@@ -14,7 +14,11 @@ import "../../kit/library";
 // Slight overscan: trims ~2% at each edge, where Flux sometimes leaves signature-like marks.
 export const STILL_OVERSCAN = 1.04;
 
-export const ImageCanvas: FC<{ still: string; caption?: string }> = ({ still, caption }) => (
+export const ImageCanvas: FC<{ still: string; caption?: string; pixelated?: boolean }> = ({
+  still,
+  caption,
+  pixelated,
+}) => (
   <AbsoluteFill style={{ backgroundColor: PALETTE.paper, overflow: "hidden" }}>
     <Img
       src={staticFile(still)}
@@ -23,6 +27,7 @@ export const ImageCanvas: FC<{ still: string; caption?: string }> = ({ still, ca
         height: "100%",
         objectFit: "cover",
         transform: `scale(${STILL_OVERSCAN})`,
+        ...(pixelated && { imageRendering: "pixelated" as const }),
       }}
     />
     {caption && (
@@ -51,7 +56,13 @@ export const BeatVisual: FC<{ beat: BeatEntry; withCaption?: boolean }> = ({
       // The CLIs check this before rendering; this is only a safety net.
       throw new Error(`AI still missing for beat "${scene.image.slice(0, 60)}"`);
     }
-    return <ImageCanvas still={beat.still} caption={withCaption ? scene.caption : undefined} />;
+    return (
+      <ImageCanvas
+        still={beat.still}
+        caption={withCaption ? scene.caption : undefined}
+        pixelated={beat.pixelated}
+      />
+    );
   }
   return <SceneCanvas spec={withCaption ? scene : { ...scene, caption: undefined }} />;
 };

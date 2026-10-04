@@ -1,4 +1,4 @@
-// File access for AI stills: character/style/workflow files, scenes/ folder, manifest, render staging.
+// File access for AI stills: character/look (style preset)/workflow files, scenes/ folder, manifest, render staging.
 
 import path from "node:path";
 import {
@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   renameSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { parseScript } from "../../kit/script-parser";
@@ -15,7 +16,10 @@ import {
   hashText,
   parseCharacter,
   parseStyle,
+  parseStyleOverride,
   planScenes,
+  PRESET_NAME,
+  resolveStyle,
   type Character,
   type Manifest,
   type ScenePlan,
@@ -24,7 +28,8 @@ import {
 import type { RenderAssets } from "./render-assets";
 
 export const CHARACTERS_DIR = path.join("shared", "characters");
-export const STYLE_FILE = path.join("shared", "style.yml");
+export const STYLES_DIR = path.join("shared", "styles");
+export const DEFAULT_PRESET = "cartoon";
 export const WORKFLOW_FILE = path.join("tools", "comfyui", "workflows", "flux-gguf.api.json");
 
 function readCharacterDir(
@@ -63,14 +68,83 @@ export function loadCharacters(
   return out;
 }
 
-/** The episode's own look (episodes/<slug>/style.yml) if it has one, else the channel look. */
-export function styleFile(episodeDir?: string): string {
-  const own = episodeDir ? path.join(episodeDir, "style.yml") : undefined;
-  return own && existsSync(own) ? own : STYLE_FILE;
+/** Preset names in shared/styles/ (file names without .yml). */
+export function listPresets(dir = STYLES_DIR): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((n) => n.endsWith(".yml"))
+    .map((n) => n.slice(0, -".yml".length))
+    .sort();
 }
 
-export function loadStyle(file = STYLE_FILE): SceneStyle {
-  return parseStyle(readFileSync(file, "utf8"), file);
+export function presetFile(name: string, dir = STYLES_DIR): string {
+  return path.join(dir, `${name}.yml`);
+}
+
+/** A preset from shared/styles/. The error lists the presets there is. */
+export function loadPreset(name: string, dir = STYLES_DIR, where = "preset"): SceneStyle {
+  const file = presetFile(name, dir);
+  if (!PRESET_NAME.test(name) || !existsSync(file)) {
+    throw new Error(
+      `${where}: unknown preset "${name}" (available: ${listPresets(dir).join(", ") || "none"})`,
+    );
+  }
+  const text = readFileSync(file, "utf8");
+  if (parseStyleOverride(text, file).preset !== undefined) {
+    throw new Error(`${file}: a preset cannot use "preset"`);
+  }
+  return parseStyle(text, file);
+}
+
+export interface Look {
+  style: SceneStyle;
+  /** The preset name, or "custom" for a complete episode style.yml without `preset:`. */
+  name: string;
+  /** The file that chose the look, or undefined for the default. */
+  file?: string;
+}
+
+/**
+ * The episode's look: episodes/<slug>/style.yml (a `preset:` plus changed fields, or a complete
+ * style), else the default preset.
+ */
+export function loadLook(episodeDir?: string, dir = STYLES_DIR): Look {
+  const own = episodeDir ? path.join(episodeDir, "style.yml") : undefined;
+  if (!own || !existsSync(own)) {
+    return { style: loadPreset(DEFAULT_PRESET, dir), name: DEFAULT_PRESET };
+  }
+  return loadLookFile(own, dir);
+}
+
+/** A style file like an episode's style.yml: `preset:` plus changes, or a complete style. */
+export function loadLookFile(file: string, dir = STYLES_DIR): Look {
+  const override = parseStyleOverride(readFileSync(file, "utf8"), file);
+  const preset = override.preset ? loadPreset(override.preset, dir, file) : undefined;
+  return {
+    style: resolveStyle(preset, override, file),
+    name: override.preset ?? "custom",
+    file,
+  };
+}
+
+/**
+ * A look named on the command line: an episode folder (its look), a style file, or a preset name.
+ * try-look and character_refs.py (via scripts/print-look.ts) use this, so every tool agrees.
+ */
+export function resolveLookArg(arg: string, dir = STYLES_DIR): Look {
+  if (existsSync(arg) && statSync(arg).isDirectory()) return loadLook(arg, dir);
+  if (arg.endsWith(".yml") || arg.includes("/") || arg.includes("\\")) {
+    if (!existsSync(arg)) throw new Error(`style file not found: ${arg}`);
+    return loadLookFile(arg, dir);
+  }
+  return { style: loadPreset(arg, dir), name: arg, file: presetFile(arg, dir) };
+}
+
+/** "retro-pixel (episodes/ubik/style.yml) · pixelate 4×, 32 colors" */
+export function describeLook(look: Look): string {
+  const from = look.file ? path.relative(process.cwd(), look.file) : "default";
+  const px = look.style.pixelate;
+  return `${look.name} (${from})${px ? ` · pixelate ${px.factor}×, ${px.colors} colors` : ""}`;
 }
 
 export function loadWorkflow(file = WORKFLOW_FILE): { template: unknown; hash: string } {
@@ -113,6 +187,7 @@ export interface EpisodeScenes {
   plan: ScenePlan;
   characters: Map<string, Character>;
   style: SceneStyle;
+  look: Look;
   workflow: { template: unknown; hash: string };
   manifest: Manifest;
 }
@@ -123,7 +198,8 @@ export function loadEpisodeScenes(episodeDir: string, scriptPath: string): Episo
   const script = parseScript(readFileSync(scriptPath, "utf8"), {
     characters: new Set(characters.keys()),
   });
-  const style = loadStyle(styleFile(episodeDir));
+  const look = loadLook(episodeDir);
+  const style = look.style;
   const workflow = loadWorkflow();
   const manifest = readManifest(episodeDir, script.id);
   const plan = planScenes(script, {
@@ -133,7 +209,7 @@ export function loadEpisodeScenes(episodeDir: string, scriptPath: string): Episo
     existing: existingStills(episodeDir),
     manifest,
   });
-  return { script, plan, characters, style, workflow, manifest };
+  return { script, plan, characters, style, look, workflow, manifest };
 }
 
 /**

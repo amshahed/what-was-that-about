@@ -1,8 +1,10 @@
-# Channel look for AI stills. Changing anything here makes existing stills "stale":
+# Look preset "cartoon" — the channel default (an episode with no style.yml uses it).
+# An episode picks a preset in episodes/<slug>/style.yml (`preset: <name>`) and may change fields.
+# Changing a preset makes the stills of every episode that uses it "stale":
 # generate-scenes regenerates them; assemble still uses the old files and warns.
 #
 # Prompt order: prefix → cast descriptions → the beat's image text → suffix (→ captionSpace).
-# The prefix comes first because CLIP-L reads only ~77 tokens.
+# The prefix comes first because CLIP-L reads only ~77 tokens: state the look in its first ~60 words.
 prefix: >-
   Cartoon webcomic panel in the style of Cyanide and Happiness and Crayon Capital: thick clean black
   outlines, flat bright colors, minimal shading, simple shapes, wide 16:9 composition.

@@ -55,6 +55,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 | #13 | Pilot: Ubik episode, end-to-end | **HITL** | V1, V2 ✅ | ⬜ unblocked |
 | #14 | Brand identity: name, mascot/persona, thumbnail style | **HITL** | — (parallel) | ⬜ |
 | #31 | Book-first episode workflow; per-episode characters and style; remove Poseidon | AFK | V2 | 🟩 merged (PR #32) |
+| #33 | Look presets (`shared/styles/`: cartoon, retro-pixel, vintage), `pixelate`, `try-look` | AFK | #31 | 🟩 merged (PR #34) |
 | V3 | Character LoRA trained on an approved reference set | **HITL** | V2, pilot feedback | ⬜ later |
 | V4 | ControlNet pose control (+ IP-Adapter) for precise poses | AFK | V2 | ⬜ later |
 | — | `[SECTION]` markers in the parser (PRD §6.4) | AFK | — | ⬜ later |
@@ -81,7 +82,7 @@ Legend — Status: ⬜ todo · 🟦 planning · 🟨 in progress · 🟩 merged 
 
 ## Tech stack (from PRD §8, locked)
 - **Language:** TypeScript.
-- **Visuals:** **AI stills, generated locally** — ComfyUI portable + **Flux.1 Dev GGUF Q5_K_S** on the RTX 3080 (PRD §8.1). Cartoon webcomic style. Character consistency via locked character files (LoRA / IP-Adapter / ControlNet later). Text-hero and diagram beats stay code-rendered from `kit/` (Rough.js). Casting doctrine — *cast existing first, custom last* (PRD §6.0).
+- **Visuals:** **AI stills, generated locally** — ComfyUI portable + **Flux.1 Dev GGUF Q5_K_S** on the RTX 3080 (PRD §8.1). Look per book from presets in `shared/styles/` (cartoon default; decision 22). Character consistency via locked character files (LoRA / IP-Adapter / ControlNet later). Text-hero and diagram beats stay code-rendered from `kit/` (Rough.js). Casting doctrine — *cast existing first, custom last* (PRD §6.0).
 - **Render/assembly:** **Remotion — locked** (PRD §8.4). FFmpeg-only fallback rejected.
 - **Audio sync:** **local faster-whisper** (`large-v3-turbo`, CUDA) — locked 2026-10-03 (PRD §8.3). Single-file boundary; OpenAI Whisper API kept as fallback.
 - **Local tools:** recipes in `tools/` (PRD §8.6). ComfyUI at `C:\ComfyUI`; Whisper venv at `.whisper-env/`.
@@ -103,7 +104,7 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 9. **Episode structure — 5-section tag-based template** (§6.4): cold-open, spoiler-warn-and-setup, recap, analysis, verdict.
 10. **Pilot — Ubik** (§20), tone tag **Heavy**.
 11. **Episode id convention — slug-only** (§8.5).
-12. **Palette — unified across the channel** (§9.2), not tone-driven per book.
+12. ~~**Palette — unified across the channel**~~ → **superseded by decision 22** (looks per book, from presets).
 13. **Intro / outro bumper — no default bumper on the pilot** (§9.2, §18); creative-design task deferred.
 14. **Fact-check artifact** (§7 stage 3b, §8.5): `episodes/<slug>/notes/factcheck.md` must have a line reading exactly `Status: ✅ approved` — assembly refuses to run otherwise. Hard render gate.
 
@@ -114,13 +115,14 @@ Captured in PRD; this is the index — see referenced PRD sections for the ratio
 18. **Reproducibility — recipes in `tools/`** (§8.6): pinned versions, model checksums, setup scripts. Installs and models stay out of git; generated images are not committed.
 19. **Character reference images stay out of git** (2026-10-03). They live on the GPU desktop; the prompts and seeds in `tools/comfyui/prompts/` reproduce them. Character files in `episodes/<slug>/characters/` and `shared/characters/` hold text only. A trained LoRA file also stays local, in `C:\ComfyUI\ComfyUI\models\loras\`.
 20. **Book-first episode workflow** (2026-10-04): user writes their own take (seed.md); Claude reads the book (user's copy in `notes/source/`, gitignored) and writes characters/concepts/plot/analysis notes in its own words with chapter refs; the takes are merged into `notes/outline.md`, then the script. Setup introduces only the essentials; the rest is introduced inline.
-21. **Per-episode cast and look** (2026-10-04): a book's characters live in `episodes/<slug>/characters/`; an optional `episodes/<slug>/style.yml` replaces the channel look for that episode. Keep the cast small; main characters get approved reference sets.
+21. **Per-episode cast and look** (2026-10-04): a book's characters live in `episodes/<slug>/characters/`; `episodes/<slug>/style.yml` sets the episode's look (decision 22). Keep the cast small; main characters get approved reference sets.
+22. **Look presets per book** (2026-10-04): one look does not fit every book. Looks are reusable presets in `shared/styles/<name>.yml` (`cartoon` = default, `retro-pixel` for Ubik, `vintage` e.g. for Babel). An episode's `style.yml` names a `preset:` and may change fields; a complete file without `preset:` is a one-off look. Optional `pixelate` makes real pixel art (shrink, fewer colours, hard-edged enlarge). Choose with `npm run try-look`. **The brand is the frame, not the picture:** narrator voice, captions, text-hero kit, thumbnail layout and title treatment stay the same in every episode. Supersedes decision 12; amends 21.
 
 ## North-star constraints (don't violate)
 - **Effort is a continuation gate** (PRD §13): drive per-episode *user* effort toward zero; episode #2 must be far easier than #1.
 - **Accuracy gate** (PRD §7, 3b): the `Status: ✅ approved` line in `notes/factcheck.md` is a hard render gate.
 - **Tone dial, constant voice** (PRD §6.1): adapt depth per book; keep the dry narrator voice constant.
-- **Images carry the message** (PRD §6.0): visual vocabulary is unbounded; the cartoon house style is the *aesthetic*, not a restriction on *what* can be on screen.
+- **Images carry the message** (PRD §6.0): visual vocabulary is unbounded; the episode's look preset is the *aesthetic*, not a restriction on *what* can be on screen.
 
 ---
 
@@ -132,7 +134,7 @@ steps in `docs/episode-workflow.md`):
 2. User writes their take in `seed.md` (tone: Heavy, decision 10) — independently.
 3. Claude reads the book → `notes/characters.md`, `concepts.md`, `plot.md`, `analysis.md`, `research.md`.
 4. Merge → `notes/outline.md` (setup: psi/anti-psi, half-life, Joe, Runciter; the rest inline).
-5. Cast files `episodes/ubik/characters/*.yml` + reference sets; decide the episode look (`style.yml`).
+5. Look: `retro-pixel` (decision 22; compare with `npm run try-look ubik …`). Cast files `episodes/ubik/characters/*.yml` + reference sets in that look.
 6. Script draft → edits → final; fact-check → `Status: ✅ approved`.
 7. `npm run generate-scenes ubik` → review → re-roll/pick; record narration.
 8. `npm run align ubik` → `npm run assemble ubik` → polish → loudness slice before publish.

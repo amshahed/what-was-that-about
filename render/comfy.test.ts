@@ -28,6 +28,40 @@ describe("buildWorkflow", () => {
     expect(TEMPLATE["4"]!.inputs.text).not.toBe("p"); // template untouched
   });
 
+  it("adds the pixel-art nodes only for pixelate", () => {
+    const plain = buildWorkflow(TEMPLATE, PARAMS);
+    expect(plain["10"]!.inputs.images).toEqual(["9", 0]);
+    expect(plain["11"]).toBeUndefined();
+
+    const wf = buildWorkflow(TEMPLATE, { ...PARAMS, pixelate: { factor: 4, colors: 32 } });
+    expect(wf["11"]).toEqual({
+      class_type: "ImageScale",
+      inputs: {
+        image: ["9", 0],
+        upscale_method: "area",
+        width: 336,
+        height: 192,
+        crop: "disabled",
+      },
+    });
+    expect(wf["12"]).toEqual({
+      class_type: "ImageQuantize",
+      inputs: { image: ["11", 0], colors: 32, dither: "none" },
+    });
+    expect(wf["13"]).toEqual({
+      class_type: "ImageScale",
+      inputs: {
+        image: ["12", 0],
+        upscale_method: "nearest-exact",
+        width: 1344,
+        height: 768,
+        crop: "disabled",
+      },
+    });
+    expect(wf["10"]!.inputs.images).toEqual(["13", 0]);
+    expect(TEMPLATE["10"]!.inputs.images).toEqual(["9", 0]); // template untouched
+  });
+
   it("fails when the template's nodes changed", () => {
     const drifted = structuredClone(TEMPLATE);
     drifted["8"]!.class_type = "KSamplerAdvanced";

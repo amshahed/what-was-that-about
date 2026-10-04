@@ -9,6 +9,8 @@ export interface WorkflowParams {
   guidance: number;
   /** SaveImage filename_prefix, e.g. "wwta/ubik/3fa91c2e". */
   prefix: string;
+  /** Pixel-art post-process (style `pixelate`); left out for other looks. */
+  pixelate?: { factor: number; colors: number };
 }
 
 type ApiWorkflow = Record<string, { class_type: string; inputs: Record<string, unknown> }>;
@@ -19,8 +21,12 @@ const NODES = {
   guidance: ["5", "FluxGuidance"],
   latent: ["7", "EmptySD3LatentImage"],
   sampler: ["8", "KSampler"],
+  decode: ["9", "VAEDecode"],
   save: ["10", "SaveImage"],
 } as const;
+
+// Added only for `pixelate`: shrink (area average) → fewer colors → enlarge with hard edges.
+const PIXEL_NODES = { down: "11", quantize: "12", up: "13" } as const;
 
 /** A copy of the template with this beat's values. Fails if the template's nodes have changed. */
 export function buildWorkflow(template: unknown, p: WorkflowParams): ApiWorkflow {
@@ -37,7 +43,35 @@ export function buildWorkflow(template: unknown, p: WorkflowParams): ApiWorkflow
   Object.assign(wf[NODES.latent[0]]!.inputs, { width: p.width, height: p.height, batch_size: 1 });
   Object.assign(wf[NODES.sampler[0]]!.inputs, { seed: p.seed, steps: p.steps });
   wf[NODES.save[0]]!.inputs.filename_prefix = p.prefix;
+  if (p.pixelate) addPixelate(wf, p.width, p.height, p.pixelate);
   return wf;
+}
+
+function addPixelate(
+  wf: ApiWorkflow,
+  width: number,
+  height: number,
+  { factor, colors }: { factor: number; colors: number },
+): void {
+  for (const id of Object.values(PIXEL_NODES)) {
+    if (wf[id]) throw new Error(`workflow template drifted: node "${id}" is reserved for pixelate`);
+  }
+  const scale = (image: [string, number], method: string, w: number, h: number) => ({
+    class_type: "ImageScale",
+    inputs: { image, upscale_method: method, width: w, height: h, crop: "disabled" },
+  });
+  wf[PIXEL_NODES.down] = scale(
+    [NODES.decode[0], 0],
+    "area",
+    Math.round(width / factor),
+    Math.round(height / factor),
+  );
+  wf[PIXEL_NODES.quantize] = {
+    class_type: "ImageQuantize",
+    inputs: { image: [PIXEL_NODES.down, 0], colors, dither: "none" },
+  };
+  wf[PIXEL_NODES.up] = scale([PIXEL_NODES.quantize, 0], "nearest-exact", width, height);
+  wf[NODES.save[0]]!.inputs.images = [PIXEL_NODES.up, 0];
 }
 
 export class ComfyError extends Error {
@@ -63,6 +97,9 @@ export const defaultDeps: ComfyDeps = {
 };
 
 export const DEFAULT_COMFY_URL = "http://127.0.0.1:8188";
+/** Per-image deadlines for generate(): the first one includes the cold model load. */
+export const FIRST_DEADLINE_MS = 600_000;
+export const DEADLINE_MS = 300_000;
 const START_HINT =
   "Start ComfyUI: C:\\ComfyUI\\run_nvidia_gpu_lan.bat — or set COMFY_URL to the machine that runs it.";
 const SETUP_HINT = "Run: powershell -ExecutionPolicy Bypass -File tools\\comfyui\\setup.ps1";

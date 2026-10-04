@@ -62,7 +62,10 @@ async function main() {
   // Media for the render is staged into a public folder (out/ is gitignored).
   const assets = new RenderAssets(path.join(episodeDir, "out", ".render-public-roughcut"));
   // AI stills: stops with the generate-scenes command if any are missing.
-  for (const [i, name] of stageStills(episodeDir, arg, scenes.plan, assets)) beats[i]!.still = name;
+  for (const [i, name] of stageStills(episodeDir, arg, scenes.plan, assets)) {
+    beats[i]!.still = name;
+    beats[i]!.pixelated = Boolean(scenes.style.pixelate);
+  }
   const musicSrc = existsSync(musicPath) ? assets.add(musicPath, `music/${musicFile}`) : "";
   if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);
 

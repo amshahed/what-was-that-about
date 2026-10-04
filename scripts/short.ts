@@ -80,6 +80,7 @@ async function main() {
     endIdx,
   )) {
     allBeats[i]!.still = name;
+    allBeats[i]!.pixelated = Boolean(scenes.style.pixelate);
   }
   const musicSrc = existsSync(musicPath) ? assets.add(musicPath, `music/${musicFile}`) : "";
   if (!musicSrc) console.warn(`music bed not found: ${musicPath} (skipping)`);

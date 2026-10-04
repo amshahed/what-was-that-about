@@ -11,7 +11,7 @@ book → your take + Claude's book notes → outline → script.yml → fact-che
 | Step                | Tool                                                                       | Runs on            |
 | ------------------- | -------------------------------------------------------------------------- | ------------------ |
 | Script (beats, EDL) | `episodes/<slug>/script.yml`                                               | any machine        |
-| Scene images        | ComfyUI + Flux.1 Dev GGUF (local), cartoon style; code kit for text scenes | Windows GPU (3080) |
+| Scene images        | ComfyUI + Flux.1 Dev GGUF (local), look preset per book; code kit for text scenes | Windows GPU (3080) |
 | Narration timing    | faster-whisper (local); OpenAI Whisper API as fallback                     | Windows GPU        |
 | Video (16:9 + 9:16) | Remotion: Ken Burns, captions, music, SFX                                  | Windows desktop    |
 
