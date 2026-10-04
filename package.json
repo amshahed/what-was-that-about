@@ -12,6 +12,7 @@
     "new-episode": "tsx scripts/new-episode.ts",
     "short": "tsx scripts/short.ts",
     "generate-scenes": "tsx scripts/generate-scenes.ts",
+    "try-look": "tsx scripts/try-look.ts",
     "build": "tsx scripts/bundle.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

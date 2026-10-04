@@ -1,12 +1,14 @@
 # Makes a reference set for one character: 8 poses/expressions x 3 seeds, on a plain background,
 # so you can approve the look before it goes into episode stills (and later train a LoRA on it).
 #
-#   C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py <character.yml> [style.yml]
+#   C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py <character.yml> [look]
 #
 # <character.yml>: episodes/<slug>/characters/<id>.yml or shared/characters/<id>.yml
-# [style.yml]:     the look (default: the episode's style.yml when the character is in
-#                  episodes/<slug>/characters/ and the episode has one, else shared/style.yml).
-#                  Only the style's prefix, steps and guidance are used; the background is plain.
+# [look]:          a preset name (retro-pixel) or a style file. Default: the episode's style.yml when
+#                  the character is in episodes/<slug>/characters/ and the episode has one, else the
+#                  cartoon preset. Presets and `preset:` + changes resolve as in generate-scenes
+#                  (scripts/lib/scene-assets.ts loadLook). Only the prefix, steps, guidance and
+#                  pixelate are used; the background is plain.
 # Output: ComfyUI's output/refs/<id>/ ; a contact sheet in out/refs/<id>_sheet.jpg (gitignored).
 # Set COMFY_URL to use another machine. Images stay out of git (plan.md decision 19).
 import json, os, sys, time, urllib.error, urllib.parse, urllib.request
@@ -35,13 +37,48 @@ def load(path):
         return yaml.safe_load(f)
 
 
-def default_style(char_path):
-    """episodes/<slug>/characters/<id>.yml → episodes/<slug>/style.yml if it exists, else the channel look."""
-    episode_style = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(char_path))), "style.yml")
-    if os.path.basename(os.path.dirname(os.path.abspath(char_path))) == "characters" and os.path.isfile(episode_style) \
-            and os.path.abspath(episode_style) != os.path.join(REPO, "shared", "style.yml"):
+STYLES = os.path.join(REPO, "shared", "styles")
+DEFAULT_PRESET = "cartoon"
+
+
+def preset_file(name):
+    path = os.path.join(STYLES, f"{name}.yml")
+    if not os.path.isfile(path):
+        names = sorted(f[:-4] for f in os.listdir(STYLES) if f.endswith(".yml"))
+        raise SystemExit(f'unknown preset "{name}" (available: {", ".join(names)})')
+    return path
+
+
+def default_look(char_path):
+    """episodes/<slug>/characters/<id>.yml → episodes/<slug>/style.yml if it exists, else the cartoon preset."""
+    char_dir = os.path.dirname(os.path.abspath(char_path))
+    episode_style = os.path.join(os.path.dirname(char_dir), "style.yml")
+    if os.path.basename(char_dir) == "characters" and os.path.isfile(episode_style):
         return episode_style
-    return os.path.join(REPO, "shared", "style.yml")
+    return preset_file(DEFAULT_PRESET)
+
+
+def resolve_look(arg):
+    """A preset name or a style file → (name, style dict), applying `preset:` + changes like loadLook."""
+    if os.sep not in arg and "/" not in arg and not arg.endswith(".yml"):
+        return arg, load(preset_file(arg))
+    style = load(arg) or {}
+    name = style.pop("preset", None)
+    if name is None:
+        return "custom", style
+    merged = {**load(preset_file(name)), **style}
+    return name, {k: v for k, v in merged.items() if v is not None and v is not False}
+
+
+def add_pixelate(wf, width, height, px):
+    """Same nodes as render/comfy.ts buildWorkflow: shrink (area) → quantize → enlarge (nearest)."""
+    f = px["factor"]
+    wf["11"] = {"class_type": "ImageScale", "inputs": {"image": ["9", 0], "upscale_method": "area",
+                "width": width // f, "height": height // f, "crop": "disabled"}}
+    wf["12"] = {"class_type": "ImageQuantize", "inputs": {"image": ["11", 0], "colors": px["colors"], "dither": "none"}}
+    wf["13"] = {"class_type": "ImageScale", "inputs": {"image": ["12", 0], "upscale_method": "nearest-exact",
+                "width": width, "height": height, "crop": "disabled"}}
+    wf["10"]["inputs"]["images"] = ["13", 0]
 
 
 def post(wf):
@@ -57,12 +94,13 @@ def post(wf):
 
 def main():
     if len(sys.argv) < 2:
-        print("usage: character_refs.py <character.yml> [style.yml]")
+        print("usage: character_refs.py <character.yml> [preset name or style.yml]")
         return 2
     char = load(sys.argv[1])
-    style_path = sys.argv[2] if len(sys.argv) > 2 else default_style(sys.argv[1])
-    print(f"style: {os.path.relpath(style_path, REPO)}", flush=True)
-    style = load(style_path)
+    look_arg = sys.argv[2] if len(sys.argv) > 2 else default_look(sys.argv[1])
+    look, style = resolve_look(look_arg)
+    px = style.get("pixelate")
+    print(f"look: {look} ({look_arg})" + (f" · pixelate {px['factor']}x, {px['colors']} colors" if px else ""), flush=True)
     template = json.load(open(WORKFLOW, encoding="utf-8"))
     cid = char["id"]
     prefix = f"{style['prefix'].strip()} Character reference sheet: full body, plain light-gray background, no scenery."
@@ -75,6 +113,8 @@ def main():
             wf["7"]["inputs"].update(width=1024, height=1024, batch_size=1)
             wf["8"]["inputs"].update(seed=7000 + i * VARIANTS + v, steps=style.get("steps", 20))
             wf["10"]["inputs"]["filename_prefix"] = f"refs/{cid}/{name}"
+            if px:
+                add_pixelate(wf, 1024, 1024, px)
             jobs.append((name, post(wf)))
     print(f"queued {len(jobs)} images for {cid}", flush=True)
 

@@ -22,6 +22,19 @@ export interface SceneStyle {
   height: number;
   steps: number;
   guidance: number;
+  /** Post-process into real pixel art: shrink by `factor`, cut to `colors`, enlarge with hard edges. */
+  pixelate?: Pixelate;
+}
+
+export interface Pixelate {
+  factor: number;
+  colors: number;
+}
+
+/** An episode's style.yml: `preset:` plus the fields it changes. `null`/`false` removes an optional field. */
+export interface StyleOverride {
+  preset?: string;
+  fields: Partial<Record<keyof SceneStyle, unknown>>;
 }
 
 const CHARACTER_KEYS = new Set(["id", "name", "description", "short", "notes"]);
@@ -33,7 +46,10 @@ const STYLE_KEYS = new Set([
   "height",
   "steps",
   "guidance",
+  "pixelate",
 ]);
+const PIXELATE_KEYS = new Set(["factor", "colors"]);
+const PIXEL_FACTORS = [2, 4, 8, 16];
 
 function asRecord(raw: unknown, where: string): Record<string, unknown> {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -81,20 +97,20 @@ export function parseCharacter(
   };
 }
 
-/** Parse shared/style.yml. Width and height must be multiples of 64 (Flux latent grid). */
-export function parseStyle(yamlText: string, where = "style.yml"): SceneStyle {
-  const obj = asRecord(parseYaml(yamlText), where);
-  checkKeys(obj, STYLE_KEYS, where);
+/** Check a complete style object. Width and height must be multiples of 64 (Flux latent grid). */
+function checkStyle(obj: Record<string, unknown>, where: string): SceneStyle {
   const num = (key: string, ok: (n: number) => boolean, rule: string): number => {
     const v = obj[key];
     if (typeof v !== "number" || !ok(v)) throw new Error(`${where}: "${key}" must be ${rule}`);
     return v;
   };
   const dim = (n: number) => Number.isInteger(n) && n >= 256 && n <= 2048 && n % 64 === 0;
+  const optional = (key: string) =>
+    obj[key] !== undefined && obj[key] !== null && obj[key] !== false;
   return {
     prefix: text(obj, "prefix", where)!,
     suffix: text(obj, "suffix", where)!,
-    captionSpace: text(obj, "captionSpace", where, false),
+    ...(optional("captionSpace") && { captionSpace: text(obj, "captionSpace", where) }),
     width: num("width", dim, "a multiple of 64 from 256 to 2048"),
     height: num("height", dim, "a multiple of 64 from 256 to 2048"),
     steps: num(
@@ -103,7 +119,53 @@ export function parseStyle(yamlText: string, where = "style.yml"): SceneStyle {
       "an integer from 1 to 100",
     ),
     guidance: num("guidance", (n) => n > 0 && n <= 20, "a number from 0 to 20"),
+    ...(optional("pixelate") && { pixelate: parsePixelate(obj.pixelate, where) }),
   };
+}
+
+function parsePixelate(raw: unknown, where: string): Pixelate {
+  const obj = asRecord(raw, `${where}: pixelate`);
+  checkKeys(obj, PIXELATE_KEYS, `${where}: pixelate`);
+  const { factor, colors } = obj;
+  if (typeof factor !== "number" || !PIXEL_FACTORS.includes(factor)) {
+    throw new Error(`${where}: "pixelate.factor" must be ${PIXEL_FACTORS.join(", ")}`);
+  }
+  if (typeof colors !== "number" || !Number.isInteger(colors) || colors < 2 || colors > 256) {
+    throw new Error(`${where}: "pixelate.colors" must be an integer from 2 to 256`);
+  }
+  return { factor, colors };
+}
+
+/** Parse a complete style file (a preset in shared/styles/, or an episode style.yml without `preset:`). */
+export function parseStyle(yamlText: string, where = "style.yml"): SceneStyle {
+  const obj = asRecord(parseYaml(yamlText), where);
+  checkKeys(obj, STYLE_KEYS, where);
+  return checkStyle(obj, where);
+}
+
+/** Parse an episode style.yml, which may name a preset and change some of its fields. */
+export function parseStyleOverride(yamlText: string, where = "style.yml"): StyleOverride {
+  const obj = asRecord(parseYaml(yamlText) ?? {}, where);
+  checkKeys(obj, new Set([...STYLE_KEYS, "preset"]), where);
+  const { preset, ...fields } = obj;
+  if (preset === undefined) return { fields };
+  if (typeof preset !== "string" || !/^[a-z0-9-]+$/.test(preset)) {
+    throw new Error(`${where}: "preset" must be a preset name like retro-pixel`);
+  }
+  return { preset, fields };
+}
+
+/**
+ * The preset with the episode's fields on top. Each field replaces the preset's as a whole
+ * (`pixelate` too); `null` or `false` removes an optional field. Without a preset the episode
+ * file must be complete.
+ */
+export function resolveStyle(
+  preset: SceneStyle | undefined,
+  override: StyleOverride,
+  where = "style.yml",
+): SceneStyle {
+  return checkStyle({ ...(preset ?? {}), ...override.fields }, where);
 }
 
 const sentence = (s: string) => s.trim().replace(/[.\s]+$/, "") + ".";
@@ -168,8 +230,20 @@ export function renderKey(
   style: SceneStyle,
   workflowHash: string,
 ): string {
-  const { width, height, steps, guidance } = style;
-  return sha256(JSON.stringify({ prompt, seed, width, height, steps, guidance, workflowHash }));
+  const { width, height, steps, guidance, pixelate } = style;
+  // Without pixelate the key is the same as before presets existed, so those stills stay fresh.
+  return sha256(
+    JSON.stringify({
+      prompt,
+      seed,
+      width,
+      height,
+      steps,
+      guidance,
+      workflowHash,
+      ...(pixelate && { pixelate: { factor: pixelate.factor, colors: pixelate.colors } }),
+    }),
+  );
 }
 
 export function hashText(s: string): string {

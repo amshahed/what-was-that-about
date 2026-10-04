@@ -23,10 +23,11 @@ character colours that no other character uses, so looks do not blend.
 
 **Writing the description:** start with the name, then build, head and hair, face, clothes, props.
 Take the look from the book first (`notes/characters.md`, with chapter refs); mark additions as ours.
-Say "a single" for props that must not repeat. Do not describe poses or expressions here — those go
+Say "a single" for props that must not repeat. No style words ("cartoon", "pixel"): the episode's
+look preset sets the style, so the same file works in any look. Do not describe poses or expressions here — those go
 in each beat's `image:` text.
 
 **Approve the look** with a reference set before using the character in stills:
-`C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py <file>.yml [style.yml]`
-(an episode character uses its episode's `style.yml` by default; only the style prefix, steps and guidance
-are used, on a plain background)
+`C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py <file>.yml [preset or style.yml]`
+(an episode character uses its episode's look by default; only the look's prefix, steps, guidance and
+pixelate are used, on a plain background)

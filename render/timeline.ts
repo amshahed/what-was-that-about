@@ -7,6 +7,8 @@ export interface BeatEntry {
   scene: BeatScene;
   /** For AI-still beats: the staticFile() name of the generated PNG (set by assemble / short). */
   still?: string;
+  /** The still is pixel art (style `pixelate`): scale it with hard edges, not smoothing. */
+  pixelated?: boolean;
   zoom: boolean;
   hold: boolean;
   narration: string;

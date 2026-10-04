@@ -11,7 +11,7 @@ The pipeline enforces one gate: assembly and Shorts do not run until the fact-ch
 | 1 Your take            | U     | `seed.md` — summary, explanation, analysis, review                            |
 | 2 Book notes           | C     | `notes/characters.md`, `concepts.md`, `plot.md`, `analysis.md`, `research.md` |
 | 2b Merge → outline     | C + U | `notes/outline.md`                                                            |
-| 2c Cast + looks        | C + U | `characters/<id>.yml`, reference sets, optional `style.yml`                   |
+| 2c Cast + looks        | C + U | `style.yml` (look preset, `try-look`), `characters/<id>.yml`, reference sets  |
 | 3 Script (EDL)         | C + U | `script.yml` (draft → edits → final)                                          |
 | 3b Fact-check gate ⛔  | U     | `notes/factcheck.md` → `Status: ✅ approved`                                  |
 | 4 Scene images         | C + U | `scenes/*.png`, `out/scenes.html`                                             |
@@ -95,6 +95,19 @@ complete; the outline and script must cut.
 
 ## Stage 2c — Cast and looks (C + U)
 
+- **Choose the look first** — reference sets and stills are made in it. Looks are reusable presets
+  in `shared/styles/` (decision 22):
+  - `cartoon` — the channel default: flat, bright webcomic.
+  - `retro-pixel` — a 1980s cinematic side-scrolling platformer, made into real pixel art (Ubik).
+  - `vintage` — a 19th-century book illustration: engraving lines, sepia wash (e.g. Babel).
+
+  Compare them on the same beats (~1 min per image; the first 3 AI beats of `script.yml`, filled up
+  with built-in probe images): `npm run try-look <slug> cartoon retro-pixel vintage` (add
+  `-- --beats 0,4` to choose beats) → `out/looks.html`. It never touches `scenes/`.
+  Then set the preset in `episodes/<slug>/style.yml` (`new-episode` writes `preset: cartoon`).
+  Change a field only when the book needs it; it replaces the preset's field (`suffix:`,
+  `pixelate: false`, …). If no preset fits, add `shared/styles/<name>.yml` — the next book with
+  the same feel reuses it. Changing the look later makes every still and reference set stale.
 - **Keep the cast small.** Main characters get an own look; everyone else is a generic figure
   ("a group of anti-psis").
 - Claude writes one file per main character in `episodes/<slug>/characters/<id>.yml` from
@@ -103,10 +116,8 @@ complete; the outline and script must cut.
 - Claude makes a reference set per main character (8 poses × 3 seeds, ~20 min of GPU each):
   `C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py episodes/<slug>/characters/<id>.yml`
   → contact sheet in `out/refs/`. A character in `episodes/<slug>/characters/` uses that episode's
-  `style.yml` automatically (if there is one); pass a style file as the second argument to override. You approve each look before it goes into the stills.
-- **Episode look (optional):** an `episodes/<slug>/style.yml` replaces the channel look
-  (`shared/style.yml`) for this episode only — for example a game-like style that fits the book.
-  Same fields as the channel file.
+  look automatically; pass a preset name or a style file as the second argument to override. You
+  approve each look before it goes into the stills.
 
 ---
 
@@ -158,10 +169,10 @@ Each beat has one picture. Pick one of two kinds:
     caption: "Still can't escape the 9 to 5."
   ```
   Describe the action, expression and setting ("…; setting: …"). Do not describe the character's
-  look — the character file holds it. The style prompt is fixed, so do not add style words. List
+  look — the character file holds it. The look preset sets the style, so do not add style words. List
   up to 3 characters in `cast`, left to right; prefer one per image. Keep the subject in the
-  middle of the frame — Shorts show only the middle third. Do not ask for dark lighting ("gloomy", "dim", "night"): the channel look is bright and
-  flat. Avoid text in the image; put words in
+  middle of the frame — Shorts show only the middle third. Do not ask for dark lighting ("gloomy", "dim", "night"): every preset is
+  bright. Avoid text in the image; put words in
   `caption` or a code-kit beat. `layers` and `image` cannot both be set; unknown fields and
   unknown characters are errors.
 - **Code-kit scene** — for text-hero beats (a giant word, number or `?`) and diagrams. Image
@@ -169,7 +180,7 @@ Each beat has one picture. Pick one of two kinds:
 
 `caption` (both kinds) shows in a bar at the top of the frame; the narration subtitles use the bottom.
 Characters live in `characters/` (this episode) or `shared/characters/` (channel); the look in
-`style.yml` (this episode, optional) or `shared/style.yml` (channel).
+`style.yml` (`preset:` from `shared/styles/`; no file = `cartoon`).
 
 ### Keeping it funny
 
@@ -309,7 +320,7 @@ Title, thumbnail, description and tags, upload, schedule. Credit CC BY music in 
 episodes/<slug>/
   seed.md              — your take: summary, explanation, analysis, review (+ tone tag)
   script.yml           — EDL script (source of truth for beats; the final script lives here)
-  style.yml            — optional episode look (replaces shared/style.yml)
+  style.yml            — the episode's look: preset: <name> (shared/styles/) + optional changes
   characters/
     <id>.yml           — this book's cast: locked looks, text only
   notes/

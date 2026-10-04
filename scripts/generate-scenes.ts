@@ -1,6 +1,7 @@
 // `npm run generate-scenes <slug> [-- options]` — makes the AI stills for an episode with local ComfyUI.
 //
-// Reads:  episodes/<slug>/script.yml, shared/characters/*.yml, shared/style.yml,
+// Reads:  episodes/<slug>/script.yml, episodes/<slug>/characters/*.yml, shared/characters/*.yml,
+//         the look: episodes/<slug>/style.yml (preset + changes) or shared/styles/cartoon.yml,
 //         tools/comfyui/workflows/flux-gguf.api.json
 // Writes: episodes/<slug>/scenes/<name>-<key>.png, scenes/manifest.json, out/scenes.html
 //
@@ -16,11 +17,11 @@
 // Server: COMFY_URL (default http://127.0.0.1:8188).
 
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { resolveEpisodeDir, requireFile } from "./lib/episode";
 import {
+  describeLook,
   loadEpisodeScenes,
   readManifest,
   scenesDir,
@@ -28,6 +29,7 @@ import {
   type EpisodeScenes,
 } from "./lib/scene-assets";
 import { renderScenesPage } from "./lib/scenes-page";
+import { startComfyIfLocal } from "./lib/comfy-start";
 import { setSceneSeed } from "./lib/script-edit";
 import {
   authorKey,
@@ -174,33 +176,6 @@ function pickCandidates(
   writeManifest(path.dirname(scriptPath), ep.manifest);
 }
 
-const COMFY_DIR = process.env.COMFYUI_DIR ?? "C:\\ComfyUI";
-const LAUNCHER = "run_nvidia_gpu_lan.bat";
-
-/** When ComfyUI is meant to run on this PC and is not up, start it in its own window and wait. */
-async function startComfyIfLocal(client: ComfyClient): Promise<void> {
-  const local = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(client.baseUrl);
-  if (!local || process.platform !== "win32" || (await client.ping())) return;
-  if (!existsSync(path.join(COMFY_DIR, LAUNCHER))) return; // preflight explains what to do
-  console.log(
-    `ComfyUI is not running — starting ${path.join(COMFY_DIR, LAUNCHER)} in a new window ...`,
-  );
-  spawn("cmd.exe", ["/c", "start", '"ComfyUI"', "/D", `"${COMFY_DIR}"`, LAUNCHER], {
-    detached: true,
-    stdio: "ignore",
-    windowsVerbatimArguments: true,
-  }).unref();
-  const deadline = Date.now() + 180_000;
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 3000));
-    if (await client.ping()) {
-      console.log("ComfyUI is up.");
-      return;
-    }
-  }
-  // Fall through: preflight reports that it is not reachable.
-}
-
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const episodeDir = resolveEpisodeDir(opts.slug);
@@ -262,6 +237,7 @@ async function main() {
   console.log(
     `${ep.script.id}: ${ep.plan.stills.length} AI stills (${counts.fresh} up to date, ${counts.stale} stale, ${counts.missing} missing); ${jobs.length} to make`,
   );
+  console.log(`look: ${describeLook(ep.look)}`);
   for (const s of selected) {
     if (s.tokens > TOKEN_WARNING)
       console.warn(`beat ${s.beat}: prompt is long (~${s.tokens} tokens); Flux may ignore the end`);
@@ -336,6 +312,7 @@ async function main() {
           height: ep.style.height,
           steps: ep.style.steps,
           guidance: ep.style.guidance,
+          pixelate: ep.style.pixelate,
           prefix: `wwta/${ep.script.id}/${j.file.replace(/\.png$/, "")}`,
         });
         const png = await client.generate(

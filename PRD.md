@@ -39,12 +39,12 @@ People who **have read the book** (or are reading it / don't mind spoilers) and 
 
 - vs. content farms: real opinions, real voice, real analysis, original art in one house style (not stock footage + TTS).
 - vs. boring lecture channels: dry humor, visual gags, tight pacing, meme literacy.
-- The moat is the **combination**: substance + comedy + a consistent cartoon world with recurring characters. Each is copyable; together they're a brand.
+- The moat is the **combination**: substance + comedy + a consistent, illustrated world with recurring characters. Each is copyable; together they're a brand.
 
 ## 6. Content design
 
 ### 6.0 Visual storytelling principle (load-bearing)
-**The images carry the message.** The narrator's voice and the picture on screen work together to land *every* point — humor, opinion, contrast, important note, emphasis, whatever. The visual vocabulary is therefore **unbounded**: not locked to character scenes. A beat's image can be a scene, a giant pull-quote, a graph, an arrow-and-pointer diagram, a single huge question mark, a bold number filling the frame — whatever best supports what the voice is saying. The cartoon house style (thick clean outlines, flat bright colors, simple shapes — see §8.1) is the *aesthetic*; it is **not** a restriction on *what* can be on screen.
+**The images carry the message.** The narrator's voice and the picture on screen work together to land *every* point — humor, opinion, contrast, important note, emphasis, whatever. The visual vocabulary is therefore **unbounded**: not locked to character scenes. A beat's image can be a scene, a giant pull-quote, a graph, an arrow-and-pointer diagram, a single huge question mark, a bold number filling the frame — whatever best supports what the voice is saying. The episode's look (a preset such as the cartoon house style, or a look chosen for the book — see §8.1) is the *aesthetic*; it is **not** a restriction on *what* can be on screen.
 
 > **Changed 2026-09-26:** the original visuals were code-drawn SVG stick figures (Rough.js). They looked too primitive. Character and scene images are now **AI-generated stills, made locally** (§8.1). Text-heavy beats stay code-rendered, because image models draw text badly.
 
@@ -103,7 +103,7 @@ Stages flow **book → your take + Claude's book notes → outline → script �
 | 1 | **Your take** | U | User writes their own summary, explanation, analysis and review in `seed.md` — before reading Claude's notes, so the two takes stay independent. User puts their copy of the book in `notes/source/` (gitignored). |
 | 2 | **Book notes & research** | C | Claude reads the book cover to cover and writes `notes/characters.md` (looks, roles, arcs), `concepts.md`, `plot.md` (chapter by chapter) and `analysis.md`, in its own words with chapter references; plus a web research pass for the critical landscape (`research.md`). Synthesizes — never copies. |
 | 2b | **Merge → outline** | C + U | Both takes merged into `notes/outline.md`: angle, small cast, sections; only the essentials introduced in the setup, the rest inline. |
-| 2c | **Cast + looks** | C + U | Main characters get character files (`episodes/<slug>/characters/`) and approved reference sets; optional episode look (`episodes/<slug>/style.yml`). |
+| 2c | **Cast + looks** | C + U | Choose the episode's look preset (`episodes/<slug>/style.yml`, compare with `npm run try-look`); main characters get character files (`episodes/<slug>/characters/`) and approved reference sets in that look. |
 | 3 | **Script draft** | C + U | Claude drafts from the outline, then we edit to final. Draft in our voice, structured to the §6.4 template, written as an **Edit Decision List** (see §8.2) with `[HOLD]`/`[ZOOM]`/`[SFX]` tags and one image-beat per shot. Each beat gets an **image prompt** and its cast list. |
 | 3b | **Fact-check** | **U** | User (who read the book) verifies plot & analysis accuracy in `episodes/<slug>/notes/factcheck.md`. **Hard render gate** — assembly refuses to run until that file have a line reading exactly `Status: ✅ approved`. Accuracy is do-or-die for an analysis channel. |
 | 4 | **Visual generation** | C + U | `npm run generate-scenes <slug>` sends each beat's prompt (plus the locked character descriptions) to **local ComfyUI + Flux** and saves one PNG per beat, with a review page (`out/scenes.html`). Text-hero beats render from the code kit. User names the stills that miss; Claude re-rolls them (`--reroll`, 3 candidates each) and keeps the chosen take (`--pick`, pins the seed). See §8.1. |
@@ -130,11 +130,15 @@ The visual + assembly layers are **real code living in this repo** (GitHub: `ams
 - **Stills, not animation.** No lip sync, no talking, no movement. Motion comes from Remotion (Ken Burns, cuts).
 - **Engine:** **ComfyUI** (Windows portable build) running **Flux.1 Dev, GGUF Q5_K_S** quant (fits 10 GB VRAM), with T5-XXL fp8 + CLIP-L text encoders and the Flux VAE. About 50 s per 1344×768 image.
 - **Local, not a cloud API:** zero per-image cost, full control, privacy.
-- **Aesthetic:** cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack): thick clean black outlines, flat bright colors, minimal shading, simple shapes. A fixed style prompt holds it. This is the default brand look; an episode may replace it with its own `episodes/<slug>/style.yml` (decision 21), for a look that fits the book.
+- **Aesthetic — a look per book, from presets** (decision 22): one look does not fit every book. Looks are reusable presets in `shared/styles/<name>.yml`:
+  - `cartoon` (default): cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack) — thick clean black outlines, flat bright colors, minimal shading, simple shapes.
+  - `retro-pixel`: a 1980s cinematic side-scrolling platformer (like *Replaced*), made into real pixel art by `pixelate` (Ubik).
+  - `vintage`: a 19th-century book illustration — engraving lines, soft sepia wash (e.g. Babel).
+  An episode's `style.yml` says `preset: <name>` and may change fields; a later book with the same feel reuses the preset. `npm run try-look <slug> <presets…>` renders the same beats in each preset side by side. The brand stays in the frame (voice, captions, text-hero kit, thumbnails), not in the picture.
 - **Character consistency:** each recurring character has a **character file** with a locked text description that the generator adds to every prompt that casts that character. Prompt-only consistency is good for build, hair, outfit and props; it is weak for precise hand poses. Planned upgrades, in order: **character LoRA** trained on an approved reference set → **IP-Adapter** → **ControlNet** for pose. Target: ~95% consistency.
 - **Text-hero and diagram beats** (§9.1) stay **code-rendered** from the existing kit (`kit/`), because image models draw text badly.
 - **Composition:** each script beat → one image prompt + cast list → one PNG in `episodes/<slug>/scenes/`. Re-roll by changing the seed or the prompt; pin a seed to keep a take.
-- **Built (V2, #29):** prompt = style prefix (`episodes/<slug>/style.yml` if present, else `shared/style.yml`) → character descriptions (`episodes/<slug>/characters/*.yml` + `shared/characters/*.yml`; 2–3 characters get short descriptions and left/right positions) → the beat's `image` text → style suffix. 1344×768, 20 steps, guidance 3.5 (~50 s per image). The seed comes from the beat's text, not its position; file names are content-based, so inserting beats keeps existing images. A style, character or workflow change marks stills *stale*: `generate-scenes` remakes them, `assemble` warns and still renders. Remotion draws stills cover-fit with 1.04× overscan (trims corner marks).
+- **Built (V2, #29; presets #33):** prompt = the look's prefix (the preset named in `episodes/<slug>/style.yml` with its changes, else `shared/styles/cartoon.yml`) → character descriptions (`episodes/<slug>/characters/*.yml` + `shared/characters/*.yml`; 2–3 characters get short descriptions and left/right positions) → the beat's `image` text → style suffix. 1344×768, 20 steps, guidance 3.5 (~50 s per image). The seed comes from the beat's text, not its position; file names are content-based, so inserting beats keeps existing images. A look, character or workflow change marks stills *stale*: `generate-scenes` remakes them, `assemble` warns and still renders. `pixelate: {factor, colors}` adds three core ComfyUI nodes after decoding (area shrink → colour quantize → nearest-neighbour enlarge) and is part of the cache key. Remotion draws stills cover-fit with 1.04× overscan (trims corner marks), with hard-edged scaling for pixel-art looks.
 
 ### 8.2 Script-as-Edit-Decision-List
 The script (`episodes/<slug>/script.yml`) is the single source of truth for the edit. Each beat carries: narration text, the image (an AI image prompt + cast list, or a code-kit composition for text-hero beats), and optional tags:
@@ -172,7 +176,7 @@ what-was-that-about/
       seed.md         # user's own take: summary, explanation, analysis, review
       script.yml      # narration + section markers (YAML comments for now) + EDL tags + per-beat images (see §6.4, §8.2)
       characters/     # this book's cast: <id>.yml (locked looks, text only)
-      style.yml       # optional episode look (overrides shared/style.yml)
+      style.yml       # the episode's look: `preset:` from shared/styles/ + optional changes
       notes/
         source/       # the user's copy of the book (gitignored)
         characters.md concepts.md plot.md analysis.md  # Claude's book notes (own words, chapter refs)
@@ -192,7 +196,7 @@ what-was-that-about/
       out/
   render/         # Remotion project + alignment boundary (local faster-whisper; OpenAI API fallback)
   scripts/        # CLI entry points (new-episode, generate-scenes, align, assemble, short)
-  shared/         # channel look (style.yml), channel characters, music/SFX, brand tokens
+  shared/         # look presets (styles/), channel characters, music/SFX, brand tokens
   tools/          # setup recipes for the local GPU tools (ComfyUI, Whisper) — see §8.6
 ```
 
@@ -225,7 +229,7 @@ The tiers complement: subtitles handle the unbroken accessibility/retention laye
 
 - **Music:** royalty-free bed, mood-matched to the **tone tag** (one loop-safe bed per tag — Light / Balanced / Heavy — in `shared/music/`; see `shared/assets.md`).
 - **SFX:** small comedic library (boings, record scratches, dings) triggered by `[SFX]` tags.
-- **Palette:** color/brand palette is **unified across the channel** by default (not tone-driven). An episode may replace the image look with `episodes/<slug>/style.yml` (decision 21); the brand then stays in captions, text-hero beats and thumbnails. For AI stills, the fixed style prompt and the character files hold the palette. Brand recognition wins; the tone tag moves the *music* dial, not the *visual palette* dial.
+- **Palette:** the **image look is chosen per book** from presets (decision 22, §8.1); the **brand is the frame, not the picture** — captions, text-hero beats, thumbnail layout and title treatment stay the same in every episode. For AI stills, the look preset and the character files hold the palette. The tone tag moves the *music* dial, not the *visual palette* dial.
 - **Intro / outro bumper:** **no default bumper** on the pilot. A signature bumper is a creative-design task that is intentionally deferred (see §18); shipping the pilot does not depend on it. When designed, it will live in `shared/bumpers/` and slot in via the renderer.
 
 ## 10. Meme strategy
@@ -276,7 +280,7 @@ The user has stated plainly: **if every video is high-effort, he stops.** Theref
 - **Style prompts:** naming other creators' styles is a reference for the look, not a copy. Do not reproduce their characters, logos or panels.
 - **Memes:** house-style regenerations are safe; real images are the risk surface (see §10).
 - **Music/SFX:** royalty-free / licensed only.
-- **AI disclosure:** visuals are AI-generated cartoon stills (not realistic, not depicting real people); narration is a real human. Follow YouTube's altered/synthetic content disclosure policy; cartoon stills normally fall outside the "realistic" disclosure rule, but check at upload.
+- **AI disclosure:** visuals are AI-generated stylised stills (cartoon, pixel art, illustration — not realistic, not depicting real people); narration is a real human. Follow YouTube's altered/synthetic content disclosure policy; stylised stills normally fall outside the "realistic" disclosure rule, but check at upload.
 
 ## 17. Risks & mitigations
 | Risk | Mitigation |

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { loadCharacters, loadWorkflow, styleFile, STYLE_FILE } from "./scene-assets";
+import { describeLook, listPresets, loadCharacters, loadLook, loadWorkflow } from "./scene-assets";
 
 const char = (id: string) => `id: ${id}\nname: ${id}\ndescription: ${id}, a person\n`;
 
@@ -33,10 +33,61 @@ describe("per-episode characters and style", () => {
     expect(() => loadCharacters(episode, shared)).toThrow(/"joe-chip" is defined twice/);
   });
 
-  it("uses the episode style when it has one", () => {
-    expect(styleFile(episode)).toBe(STYLE_FILE);
-    writeFileSync(path.join(episode, "style.yml"), "prefix: x\n");
-    expect(styleFile(episode)).toBe(path.join(episode, "style.yml"));
+  describe("looks", () => {
+    const full = (prefix: string) =>
+      `prefix: ${prefix}\nsuffix: s\nwidth: 1344\nheight: 768\nsteps: 20\nguidance: 3.5\n`;
+    let styles: string;
+    beforeEach(() => {
+      styles = path.join(shared, "styles");
+      mkdirSync(styles);
+      writeFileSync(path.join(styles, "cartoon.yml"), full("cartoon"));
+      writeFileSync(
+        path.join(styles, "retro-pixel.yml"),
+        full("pixel") + "pixelate: { factor: 4, colors: 32 }\n",
+      );
+    });
+
+    it("uses the cartoon preset when the episode has no style.yml", () => {
+      const look = loadLook(episode, styles);
+      expect(look.name).toBe("cartoon");
+      expect(look.file).toBeUndefined();
+      expect(look.style.prefix).toBe("cartoon");
+      expect(describeLook(look)).toBe("cartoon (default)");
+      expect(listPresets(styles)).toEqual(["cartoon", "retro-pixel"]);
+    });
+
+    it("applies the episode's preset and changes", () => {
+      writeFileSync(path.join(episode, "style.yml"), "preset: retro-pixel\nsuffix: night\n");
+      const look = loadLook(episode, styles);
+      expect(look.name).toBe("retro-pixel");
+      expect(look.style).toMatchObject({
+        prefix: "pixel",
+        suffix: "night",
+        pixelate: { factor: 4, colors: 32 },
+      });
+      expect(describeLook(look)).toMatch(/^retro-pixel \(.*style\.yml\) · pixelate 4×, 32 colors$/);
+    });
+
+    it("names the presets there are when the preset is unknown", () => {
+      writeFileSync(path.join(episode, "style.yml"), "preset: retro-pxl\n");
+      expect(() => loadLook(episode, styles)).toThrow(
+        /unknown preset "retro-pxl" \(available: cartoon, retro-pixel\)/,
+      );
+    });
+
+    it("takes a complete episode style without a preset as a custom look", () => {
+      writeFileSync(path.join(episode, "style.yml"), full("mine"));
+      expect(loadLook(episode, styles)).toMatchObject({
+        name: "custom",
+        style: { prefix: "mine" },
+      });
+    });
+
+    it("does not let a preset name another preset", () => {
+      writeFileSync(path.join(styles, "loop.yml"), "preset: cartoon\n");
+      writeFileSync(path.join(episode, "style.yml"), "preset: loop\n");
+      expect(() => loadLook(episode, styles)).toThrow('a preset cannot use "preset"');
+    });
   });
 });
 

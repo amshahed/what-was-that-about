@@ -1,0 +1,26 @@
+# Look preset "retro-pixel" — a 1980s 2D platformer in pixel art (made for Ubik; the reference was
+# the game Replaced, kept bright: naming it, or "cinematic", made the images dark and letterboxed).
+# `pixelate` turns the Flux image into real pixel art afterwards: shrink 4×, cut to 32 colors,
+# enlarge with hard edges. Flux follows "no X" weakly, so the prompt says what it wants instead
+# (bare walls, edge to edge). See cartoon.yml for how presets work.
+prefix: >-
+  Retro 16-bit pixel art scene from a 1980s platformer video game: chunky visible pixels, bold
+  limited palette of bright warm saturated colors, crisp dark outlines on characters, side-on
+  view, layered background, the scene fills the whole wide 16:9 image edge to edge. Medium shot:
+  characters are large, filling half the frame height, with big readable faces and clear
+  exaggerated expressions.
+suffix: >-
+  The action is clearly shown mid-motion in the center of the frame. Bright sunny daytime scene,
+  evenly lit, light pastel walls and strong contrast between characters and background, no deep
+  shadows. Bare plain walls painted one flat color, plain screens and unmarked objects. No text,
+  no letters, no logos, no game interface or score display.
+captionSpace: >-
+  Keep the top fifth of the frame as plain sky or empty wall, with no heads or important objects
+  there.
+width: 1344
+height: 768
+steps: 20
+guidance: 3.5
+pixelate:
+  factor: 4
+  colors: 32

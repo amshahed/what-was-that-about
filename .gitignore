@@ -16,6 +16,9 @@ episodes/**/audio/
 episodes/**/scenes/
 # your copy of the book (Claude reads it; never committed)
 episodes/**/notes/source/
+# safety net: a book copied to the wrong folder still stays out of git
+episodes/**/source/
+*.epub
 *.mp4
 *.mov
 *.wav

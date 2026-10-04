@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import {
   authorKey,
   candidateSeeds,
@@ -10,8 +11,10 @@ import {
   parseBeatList,
   parseCharacter,
   parseStyle,
+  parseStyleOverride,
   planScenes,
   renderKey,
+  resolveStyle,
   stillFileName,
   type Character,
   type SceneStyle,
@@ -70,6 +73,28 @@ describe("seeds and keys", () => {
     expect(deriveSeed("Runciter reads", ["runciter"])).not.toBe(deriveSeed("Runciter reads", []));
     const s = deriveSeed("x", []);
     expect(Number.isInteger(s) && s >= 0 && s <= 2 ** 32 - 1).toBe(true);
+  });
+
+  it("keeps the old renderKey for looks without pixelate, and changes it with pixelate", () => {
+    const old = createHash("sha256")
+      .update(
+        JSON.stringify({
+          prompt: "p",
+          seed: 1,
+          width: 1344,
+          height: 768,
+          steps: 20,
+          guidance: 3.5,
+          workflowHash: "w",
+        }),
+      )
+      .digest("hex");
+    expect(renderKey("p", 1, STYLE, "w")).toBe(old);
+    const px = { ...STYLE, pixelate: { factor: 4, colors: 32 } };
+    expect(renderKey("p", 1, px, "w")).not.toBe(old);
+    expect(renderKey("p", 1, px, "w")).not.toBe(
+      renderKey("p", 1, { ...px, pixelate: { factor: 4, colors: 16 } }, "w"),
+    );
   });
 
   it("authorKey follows image/cast/seed; renderKey follows prompt and settings", () => {
@@ -188,11 +213,80 @@ describe("character and style files", () => {
     expect(() => parseStyle(yaml.replace("768", "770"))).toThrow("multiple of 64");
   });
 
-  it("loads the committed channel style", () => {
-    const style = parseStyle(readFileSync(new URL("../shared/style.yml", import.meta.url), "utf8"));
-    expect(style.width % 64).toBe(0);
-    const prompt = composePrompt(style, [RUNCITER], "Runciter talks to Ella; setting: a quiet moratorium", { caption: true });
-    expect(estimateTokens(prompt)).toBeLessThan(400);
+  it("loads every committed look preset", () => {
+    const dir = new URL("../shared/styles/", import.meta.url);
+    const names = readdirSync(dir).filter((n) => n.endsWith(".yml"));
+    expect(names).toEqual(
+      expect.arrayContaining(["cartoon.yml", "retro-pixel.yml", "vintage.yml"]),
+    );
+    for (const n of names) {
+      const style = parseStyle(readFileSync(new URL(n, dir), "utf8"), n);
+      if (style.pixelate) {
+        expect(style.width % style.pixelate.factor).toBe(0);
+        expect(style.height % style.pixelate.factor).toBe(0);
+      }
+      const prompt = composePrompt(
+        style,
+        [RUNCITER],
+        "Runciter talks to Ella; setting: a quiet moratorium",
+        { caption: true },
+      );
+      expect(estimateTokens(prompt)).toBeLessThan(400);
+    }
+  });
+
+  it("checks pixelate", () => {
+    const base = "prefix: a\nsuffix: b\nwidth: 1344\nheight: 768\nsteps: 20\nguidance: 3.5\n";
+    expect(parseStyle(base + "pixelate: { factor: 4, colors: 32 }\n").pixelate).toEqual({
+      factor: 4,
+      colors: 32,
+    });
+    expect(() => parseStyle(base + "pixelate: { factor: 3, colors: 32 }\n")).toThrow("factor");
+    expect(() => parseStyle(base + "pixelate: { factor: 4, colors: 300 }\n")).toThrow("colors");
+    expect(() => parseStyle(base + "pixelate: { factor: 4 }\n")).toThrow("colors");
+    expect(() => parseStyle(base + "pixelate: { factor: 4, colors: 8, dither: x }\n")).toThrow(
+      'unknown field "dither"',
+    );
+  });
+});
+
+describe("look presets and episode overrides", () => {
+  const PRESET: SceneStyle = {
+    ...STYLE,
+    captionSpace: "Top empty.",
+    pixelate: { factor: 4, colors: 32 },
+  };
+
+  it("uses the preset as it is when the episode changes nothing", () => {
+    expect(resolveStyle(PRESET, parseStyleOverride("preset: retro-pixel\n"))).toEqual(PRESET);
+  });
+
+  it("replaces only the fields the episode sets; pixelate as a whole", () => {
+    const o = parseStyleOverride(
+      "preset: retro-pixel\nsuffix: Night.\npixelate: { factor: 8, colors: 16 }\n",
+    );
+    expect(o.preset).toBe("retro-pixel");
+    expect(resolveStyle(PRESET, o)).toEqual({
+      ...PRESET,
+      suffix: "Night.",
+      pixelate: { factor: 8, colors: 16 },
+    });
+  });
+
+  it("removes optional fields with false or null", () => {
+    const o = parseStyleOverride("preset: retro-pixel\npixelate: false\ncaptionSpace: null\n");
+    const s = resolveStyle(PRESET, o);
+    expect(s.pixelate).toBeUndefined();
+    expect(s.captionSpace).toBeUndefined();
+  });
+
+  it("needs a complete file without a preset, and checks names and fields", () => {
+    expect(() => resolveStyle(undefined, parseStyleOverride("suffix: x\n"))).toThrow('"prefix"');
+    expect(() => parseStyleOverride("preset: Retro Pixel\n")).toThrow("preset name");
+    expect(() => parseStyleOverride("preset: cartoon\nlook: x\n")).toThrow('unknown field "look"');
+    expect(() => resolveStyle(PRESET, parseStyleOverride("preset: x\nsteps: 0\n"))).toThrow(
+      '"steps"',
+    );
   });
 });
 

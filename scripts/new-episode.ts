@@ -11,9 +11,11 @@
 //   episodes/<slug>/notes/outline.md       — the merged plan for the video (you + Claude)
 //   episodes/<slug>/notes/factcheck.md     — fact-check gate (must be approved before render)
 //   episodes/<slug>/script.yml             — EDL script stub
+//   episodes/<slug>/style.yml              — the episode's look: a preset from shared/styles/
 
 import path from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { DEFAULT_PRESET, listPresets } from "./lib/scene-assets";
 
 function usage(): never {
   console.error("usage: tsx scripts/new-episode.ts <book-slug>");
@@ -175,7 +177,17 @@ function outline(slug: string): string {
 <!-- From seed.md "My review" + Claude's review points (notes/analysis.md). -->
 
 ## Visual style for this episode
-<!-- Channel look (shared/style.yml), or an episode look in episodes/${slug}/style.yml. -->
+<!-- The look preset in episodes/${slug}/style.yml (shared/styles/). Compare looks first:
+     npm run try-look ${slug} cartoon retro-pixel vintage -->
+`;
+}
+
+function styleStub(slug: string): string {
+  return `# Look for ${slug}: a preset from shared/styles/ (${listPresets().join(", ")}).
+# Compare first: npm run try-look ${slug} ${listPresets().join(" ")}
+# Change a field only when needed; it replaces the preset's field (e.g. suffix:, pixelate: false).
+# A new look for several books: add shared/styles/<name>.yml. Changing the look later remakes every still.
+preset: ${DEFAULT_PRESET}
 `;
 }
 
@@ -268,6 +280,7 @@ function main(): void {
   safeWrite(path.join(episodeDir, "notes", "outline.md"), outline(slug));
   safeWrite(path.join(episodeDir, "notes", "factcheck.md"), factcheck(slug));
   safeWrite(path.join(episodeDir, "script.yml"), scriptStub(slug));
+  safeWrite(path.join(episodeDir, "style.yml"), styleStub(slug));
 
   console.log("");
   console.log("next steps (docs/episode-workflow.md):");
@@ -277,9 +290,10 @@ function main(): void {
   );
   console.log("  3. Claude: reads the book, writes notes/characters, concepts, plot, analysis");
   console.log("  4. Together: merge into notes/outline.md, then the script");
-  console.log('  5. You: fact-check → "Status: ✅ approved" in notes/factcheck.md');
-  console.log(`  6. npm run generate-scenes ${slug} → review → record narration`);
-  console.log(`  7. npm run align ${slug} → npm run assemble ${slug}`);
+  console.log(`  5. Choose the look: npm run try-look ${slug} <presets> → preset: in style.yml`);
+  console.log('  6. You: fact-check → "Status: ✅ approved" in notes/factcheck.md');
+  console.log(`  7. npm run generate-scenes ${slug} → review → record narration`);
+  console.log(`  8. npm run align ${slug} → npm run assemble ${slug}`);
 }
 
 main();
