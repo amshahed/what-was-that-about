@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   renameSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { parseScript } from "../../kit/script-parser";
@@ -17,6 +18,7 @@ import {
   parseStyle,
   parseStyleOverride,
   planScenes,
+  PRESET_NAME,
   resolveStyle,
   type Character,
   type Manifest,
@@ -82,7 +84,7 @@ export function presetFile(name: string, dir = STYLES_DIR): string {
 /** A preset from shared/styles/. The error lists the presets there is. */
 export function loadPreset(name: string, dir = STYLES_DIR, where = "preset"): SceneStyle {
   const file = presetFile(name, dir);
-  if (!existsSync(file)) {
+  if (!PRESET_NAME.test(name) || !existsSync(file)) {
     throw new Error(
       `${where}: unknown preset "${name}" (available: ${listPresets(dir).join(", ") || "none"})`,
     );
@@ -111,13 +113,31 @@ export function loadLook(episodeDir?: string, dir = STYLES_DIR): Look {
   if (!own || !existsSync(own)) {
     return { style: loadPreset(DEFAULT_PRESET, dir), name: DEFAULT_PRESET };
   }
-  const override = parseStyleOverride(readFileSync(own, "utf8"), own);
-  const preset = override.preset ? loadPreset(override.preset, dir, own) : undefined;
+  return loadLookFile(own, dir);
+}
+
+/** A style file like an episode's style.yml: `preset:` plus changes, or a complete style. */
+export function loadLookFile(file: string, dir = STYLES_DIR): Look {
+  const override = parseStyleOverride(readFileSync(file, "utf8"), file);
+  const preset = override.preset ? loadPreset(override.preset, dir, file) : undefined;
   return {
-    style: resolveStyle(preset, override, own),
+    style: resolveStyle(preset, override, file),
     name: override.preset ?? "custom",
-    file: own,
+    file,
   };
+}
+
+/**
+ * A look named on the command line: an episode folder (its look), a style file, or a preset name.
+ * try-look and character_refs.py (via scripts/print-look.ts) use this, so every tool agrees.
+ */
+export function resolveLookArg(arg: string, dir = STYLES_DIR): Look {
+  if (existsSync(arg) && statSync(arg).isDirectory()) return loadLook(arg, dir);
+  if (arg.endsWith(".yml") || arg.includes("/") || arg.includes("\\")) {
+    if (!existsSync(arg)) throw new Error(`style file not found: ${arg}`);
+    return loadLookFile(arg, dir);
+  }
+  return { style: loadPreset(arg, dir), name: arg, file: presetFile(arg, dir) };
 }
 
 /** "retro-pixel (episodes/ubik/style.yml) · pixelate 4×, 32 colors" */

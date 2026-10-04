@@ -49,6 +49,8 @@ const STYLE_KEYS = new Set([
   "pixelate",
 ]);
 const PIXELATE_KEYS = new Set(["factor", "colors"]);
+/** Preset names: file names in shared/styles/ (lowercase, digits, hyphens). */
+export const PRESET_NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const PIXEL_FACTORS = [2, 4, 8, 16];
 
 function asRecord(raw: unknown, where: string): Record<string, unknown> {
@@ -149,7 +151,7 @@ export function parseStyleOverride(yamlText: string, where = "style.yml"): Style
   checkKeys(obj, new Set([...STYLE_KEYS, "preset"]), where);
   const { preset, ...fields } = obj;
   if (preset === undefined) return { fields };
-  if (typeof preset !== "string" || !/^[a-z0-9-]+$/.test(preset)) {
+  if (typeof preset !== "string" || !PRESET_NAME.test(preset)) {
     throw new Error(`${where}: "preset" must be a preset name like retro-pixel`);
   }
   return { preset, fields };

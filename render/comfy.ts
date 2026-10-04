@@ -97,6 +97,9 @@ export const defaultDeps: ComfyDeps = {
 };
 
 export const DEFAULT_COMFY_URL = "http://127.0.0.1:8188";
+/** Per-image deadlines for generate(): the first one includes the cold model load. */
+export const FIRST_DEADLINE_MS = 600_000;
+export const DEADLINE_MS = 300_000;
 const START_HINT =
   "Start ComfyUI: C:\\ComfyUI\\run_nvidia_gpu_lan.bat — or set COMFY_URL to the machine that runs it.";
 const SETUP_HINT = "Run: powershell -ExecutionPolicy Bypass -File tools\\comfyui\\setup.ps1";

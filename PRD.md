@@ -1,7 +1,7 @@
 # PRD — "What Was That About" (working title)
 ### A funny/casual book summary & analysis YouTube channel, powered by a code-driven production pipeline
 
-> One-liner: **The book-analysis channel for people who actually read the book** — genuinely satisfying "ending explained" + analysis, delivered in a dry, funny cartoon style, produced through a near-automated pipeline so each episode is low-effort to make.
+> One-liner: **The book-analysis channel for people who actually read the book** — genuinely satisfying "ending explained" + analysis, delivered in a dry, funny, illustrated style, produced through a near-automated pipeline so each episode is low-effort to make.
 
 ---
 
@@ -37,7 +37,7 @@ People who **have read the book** (or are reading it / don't mind spoilers) and 
 
 > "Finally, a book analysis that's actually *good* **and** actually *funny* — from someone who read the thing."
 
-- vs. content farms: real opinions, real voice, real analysis, original art in one house style (not stock footage + TTS).
+- vs. content farms: real opinions, real voice, real analysis, original art in a look chosen per book (not stock footage + TTS).
 - vs. boring lecture channels: dry humor, visual gags, tight pacing, meme literacy.
 - The moat is the **combination**: substance + comedy + a consistent, illustrated world with recurring characters. Each is copyable; together they're a brand.
 
@@ -132,9 +132,9 @@ The visual + assembly layers are **real code living in this repo** (GitHub: `ams
 - **Local, not a cloud API:** zero per-image cost, full control, privacy.
 - **Aesthetic — a look per book, from presets** (decision 22): one look does not fit every book. Looks are reusable presets in `shared/styles/<name>.yml`:
   - `cartoon` (default): cartoon webcomic style (Cyanide & Happiness / Crayon Capital / Clever Crack) — thick clean black outlines, flat bright colors, minimal shading, simple shapes.
-  - `retro-pixel`: a 1980s cinematic side-scrolling platformer (like *Replaced*), made into real pixel art by `pixelate` (Ubik).
+  - `retro-pixel`: a bright 16-bit 1980s platformer, inspired by *Replaced* but kept brighter (the game itself is dark and neon), made into real pixel art by `pixelate` (Ubik).
   - `vintage`: a 19th-century book illustration — engraving lines, soft sepia wash (e.g. Babel).
-  An episode's `style.yml` says `preset: <name>` and may change fields; a later book with the same feel reuses the preset. `npm run try-look <slug> <presets…>` renders the same beats in each preset side by side. The brand stays in the frame (voice, captions, text-hero kit, thumbnails), not in the picture.
+  An episode's `style.yml` says `preset: <name>` and may change fields; a later book with the same feel reuses the preset. `npm run try-look <slug> <looks…>` renders the same beats in each preset (or `episode`, the episode's own `style.yml`) side by side. The brand stays in the frame (voice, captions, text-hero kit, thumbnails), not in the picture.
 - **Character consistency:** each recurring character has a **character file** with a locked text description that the generator adds to every prompt that casts that character. Prompt-only consistency is good for build, hair, outfit and props; it is weak for precise hand poses. Planned upgrades, in order: **character LoRA** trained on an approved reference set → **IP-Adapter** → **ControlNet** for pose. Target: ~95% consistency.
 - **Text-hero and diagram beats** (§9.1) stay **code-rendered** from the existing kit (`kit/`), because image models draw text badly.
 - **Composition:** each script beat → one image prompt + cast list → one PNG in `episodes/<slug>/scenes/`. Re-roll by changing the seed or the prompt; pin a seed to keep a take.
@@ -233,7 +233,7 @@ The tiers complement: subtitles handle the unbroken accessibility/retention laye
 - **Intro / outro bumper:** **no default bumper** on the pilot. A signature bumper is a creative-design task that is intentionally deferred (see §18); shipping the pilot does not depend on it. When designed, it will live in `shared/bumpers/` and slot in via the renderer.
 
 ## 10. Meme strategy
-- **Default:** regenerate meme **formats** in house style with the local image generator, cast with our own characters (safer on copyright, monetization-friendly, on-brand, reusable).
+- **Default:** regenerate meme **formats** in the episode's look with the local image generator, cast with our own characters (safer on copyright, monetization-friendly, on-brand, reusable).
 - **Experiment phase:** where the *expression/visual itself is the meme* and a redraw can't replace it, also try the **real image**. Produce both, A/B them in the review/polish step, keep what lands.
 - **Converge:** after a few episodes, codify a rule per meme-type.
 - **Watch:** real-meme usage can ding monetization — monitor that signal while testing.

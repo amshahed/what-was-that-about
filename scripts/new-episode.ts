@@ -289,9 +289,13 @@ function main(): void {
     `  2. You: write your take in episodes/${slug}/seed.md (before reading Claude's notes)`,
   );
   console.log("  3. Claude: reads the book, writes notes/characters, concepts, plot, analysis");
-  console.log("  4. Together: merge into notes/outline.md, then the script");
-  console.log(`  5. Choose the look: npm run try-look ${slug} <presets> → preset: in style.yml`);
-  console.log('  6. You: fact-check → "Status: ✅ approved" in notes/factcheck.md');
+  console.log("  4. Together: merge into notes/outline.md");
+  console.log(
+    `  5. Look + cast: npm run try-look ${slug} <presets> → preset: in style.yml; characters/ + reference sets`,
+  );
+  console.log(
+    '  6. Together: the script; you: fact-check → "Status: ✅ approved" in notes/factcheck.md',
+  );
   console.log(`  7. npm run generate-scenes ${slug} → review → record narration`);
   console.log(`  8. npm run align ${slug} → npm run assemble ${slug}`);
 }

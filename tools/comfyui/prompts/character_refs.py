@@ -4,14 +4,15 @@
 #   C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py <character.yml> [look]
 #
 # <character.yml>: episodes/<slug>/characters/<id>.yml or shared/characters/<id>.yml
-# [look]:          a preset name (retro-pixel) or a style file. Default: the episode's style.yml when
-#                  the character is in episodes/<slug>/characters/ and the episode has one, else the
-#                  cartoon preset. Presets and `preset:` + changes resolve as in generate-scenes
-#                  (scripts/lib/scene-assets.ts loadLook). Only the prefix, steps, guidance and
-#                  pixelate are used; the background is plain.
-# Output: ComfyUI's output/refs/<id>/ ; a contact sheet in out/refs/<id>_sheet.jpg (gitignored).
+# [look]:          a preset name (retro-pixel), a style file or an episode folder. Default: the
+#                  character's episode (its style.yml, else cartoon); a shared character → cartoon.
+#                  Resolved by scripts/print-look.ts — the same code as generate-scenes — so Node
+#                  must be installed. Only the prefix, steps, guidance and pixelate are used; the
+#                  background is plain (framing words belong in the look's suffix, which refs skip).
+# Output: ComfyUI's output/refs/<id>/<look>/ ; a contact sheet in out/refs/<id>_<look>_sheet.jpg
+#         (gitignored). Each look keeps its own set.
 # Set COMFY_URL to use another machine. Images stay out of git (plan.md decision 19).
-import json, os, sys, time, urllib.error, urllib.parse, urllib.request
+import json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 
 import yaml
 
@@ -37,41 +38,29 @@ def load(path):
         return yaml.safe_load(f)
 
 
-STYLES = os.path.join(REPO, "shared", "styles")
-DEFAULT_PRESET = "cartoon"
-
-
-def preset_file(name):
-    path = os.path.join(STYLES, f"{name}.yml")
-    if not os.path.isfile(path):
-        names = sorted(f[:-4] for f in os.listdir(STYLES) if f.endswith(".yml"))
-        raise SystemExit(f'unknown preset "{name}" (available: {", ".join(names)})')
-    return path
-
-
 def default_look(char_path):
-    """episodes/<slug>/characters/<id>.yml → episodes/<slug>/style.yml if it exists, else the cartoon preset."""
+    """episodes/<slug>/characters/<id>.yml → that episode (its look); a shared character → cartoon."""
     char_dir = os.path.dirname(os.path.abspath(char_path))
-    episode_style = os.path.join(os.path.dirname(char_dir), "style.yml")
-    if os.path.basename(char_dir) == "characters" and os.path.isfile(episode_style):
-        return episode_style
-    return preset_file(DEFAULT_PRESET)
+    if os.path.basename(char_dir) == "characters" and os.path.basename(os.path.dirname(os.path.dirname(char_dir))) == "episodes":
+        return os.path.dirname(char_dir)
+    return "cartoon"
 
 
 def resolve_look(arg):
-    """A preset name or a style file → (name, style dict), applying `preset:` + changes like loadLook."""
-    if os.sep not in arg and "/" not in arg and not arg.endswith(".yml"):
-        return arg, load(preset_file(arg))
-    style = load(arg) or {}
-    name = style.pop("preset", None)
-    if name is None:
-        return "custom", style
-    merged = {**load(preset_file(name)), **style}
-    return name, {k: v for k, v in merged.items() if v is not None and v is not False}
+    """Episode folder, style file or preset name → the resolved look, from the same TS code as
+    generate-scenes (scripts/print-look.ts), so presets and rules can never differ."""
+    npx = "npx.cmd" if os.name == "nt" else "npx"
+    run = subprocess.run([npx, "tsx", "scripts/print-look.ts", arg], cwd=REPO, capture_output=True,
+                         text=True, encoding="utf-8")
+    if run.returncode != 0:
+        raise SystemExit((run.stderr or run.stdout).strip() or f"print-look failed for {arg}")
+    return json.loads(run.stdout.strip().splitlines()[-1])
 
 
 def add_pixelate(wf, width, height, px):
     """Same nodes as render/comfy.ts buildWorkflow: shrink (area) → quantize → enlarge (nearest)."""
+    if wf.get("9", {}).get("class_type") != "VAEDecode" or any(k in wf for k in ("11", "12", "13")):
+        raise SystemExit("workflow template drifted: pixelate needs node 9 = VAEDecode and free ids 11-13")
     f = px["factor"]
     wf["11"] = {"class_type": "ImageScale", "inputs": {"image": ["9", 0], "upscale_method": "area",
                 "width": width // f, "height": height // f, "crop": "disabled"}}
@@ -98,7 +87,8 @@ def main():
         return 2
     char = load(sys.argv[1])
     look_arg = sys.argv[2] if len(sys.argv) > 2 else default_look(sys.argv[1])
-    look, style = resolve_look(look_arg)
+    resolved = resolve_look(look_arg)
+    look, style = resolved["name"], resolved["style"]
     px = style.get("pixelate")
     print(f"look: {look} ({look_arg})" + (f" · pixelate {px['factor']}x, {px['colors']} colors" if px else ""), flush=True)
     template = json.load(open(WORKFLOW, encoding="utf-8"))
@@ -109,10 +99,10 @@ def main():
         for v in range(VARIANTS):
             wf = json.loads(json.dumps(template))
             wf["4"]["inputs"]["text"] = f"{prefix} {char['description'].strip().rstrip('.')}, {pose}. No text, unsigned artwork."
-            wf["5"]["inputs"]["guidance"] = style.get("guidance", 3.5)
+            wf["5"]["inputs"]["guidance"] = style["guidance"]
             wf["7"]["inputs"].update(width=1024, height=1024, batch_size=1)
-            wf["8"]["inputs"].update(seed=7000 + i * VARIANTS + v, steps=style.get("steps", 20))
-            wf["10"]["inputs"]["filename_prefix"] = f"refs/{cid}/{name}"
+            wf["8"]["inputs"].update(seed=7000 + i * VARIANTS + v, steps=style["steps"])
+            wf["10"]["inputs"]["filename_prefix"] = f"refs/{cid}/{look}/{name}"
             if px:
                 add_pixelate(wf, 1024, 1024, px)
             jobs.append((name, post(wf)))
@@ -147,7 +137,7 @@ def main():
         sheet = Image.new("RGB", (300 * cols, 300 * ((len(thumbs) + cols - 1) // cols)), "white")
         for k, t in enumerate(thumbs):
             sheet.paste(t, ((k % cols) * 300, (k // cols) * 300))
-        out = os.path.join(REPO, "out", "refs", f"{cid}_sheet.jpg")  # out/ is gitignored
+        out = os.path.join(REPO, "out", "refs", f"{cid}_{look}_sheet.jpg")  # out/ is gitignored
         os.makedirs(os.path.dirname(out), exist_ok=True)
         sheet.save(out, quality=88)
         print(f"contact sheet: {out}")

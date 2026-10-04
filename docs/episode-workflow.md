@@ -98,12 +98,14 @@ complete; the outline and script must cut.
 - **Choose the look first** — reference sets and stills are made in it. Looks are reusable presets
   in `shared/styles/` (decision 22):
   - `cartoon` — the channel default: flat, bright webcomic.
-  - `retro-pixel` — a 1980s cinematic side-scrolling platformer, made into real pixel art (Ubik).
+  - `retro-pixel` — a bright 16-bit 1980s platformer, inspired by *Replaced* but kept brighter,
+    made into real pixel art (Ubik).
   - `vintage` — a 19th-century book illustration: engraving lines, sepia wash (e.g. Babel).
 
   Compare them on the same beats (~1 min per image; the first 3 AI beats of `script.yml`, filled up
   with built-in probe images): `npm run try-look <slug> cartoon retro-pixel vintage` (add
-  `-- --beats 0,4` to choose beats) → `out/looks.html`. It never touches `scenes/`.
+  `-- --beats 0,4` to choose beats; `episode` instead of a preset shows the episode's own
+  `style.yml` with its changes) → `out/looks.html`. It never touches `scenes/`.
   Then set the preset in `episodes/<slug>/style.yml` (`new-episode` writes `preset: cartoon`).
   Change a field only when the book needs it; it replaces the preset's field (`suffix:`,
   `pixelate: false`, …). If no preset fits, add `shared/styles/<name>.yml` — the next book with
@@ -116,8 +118,9 @@ complete; the outline and script must cut.
 - Claude makes a reference set per main character (8 poses × 3 seeds, ~20 min of GPU each):
   `C:\ComfyUI\python_embeded\python.exe tools/comfyui/prompts/character_refs.py episodes/<slug>/characters/<id>.yml`
   → contact sheet in `out/refs/`. A character in `episodes/<slug>/characters/` uses that episode's
-  look automatically; pass a preset name or a style file as the second argument to override. You
-  approve each look before it goes into the stills.
+  look automatically; pass a preset name or a style file as the second argument to override.
+  Each look keeps its own set (`out/refs/<id>_<look>_sheet.jpg`). You approve each look before it
+  goes into the stills.
 
 ---
 
@@ -171,8 +174,8 @@ Each beat has one picture. Pick one of two kinds:
   Describe the action, expression and setting ("…; setting: …"). Do not describe the character's
   look — the character file holds it. The look preset sets the style, so do not add style words. List
   up to 3 characters in `cast`, left to right; prefer one per image. Keep the subject in the
-  middle of the frame — Shorts show only the middle third. Do not ask for dark lighting ("gloomy", "dim", "night"): every preset is
-  bright. Avoid text in the image; put words in
+  middle of the frame — Shorts show only the middle third. Do not ask for dark lighting ("gloomy", "dim", "night"): the presets are
+  tuned bright. Avoid text in the image; put words in
   `caption` or a code-kit beat. `layers` and `image` cannot both be set; unknown fields and
   unknown characters are errors.
 - **Code-kit scene** — for text-hero beats (a giant word, number or `?`) and diagrams. Image

@@ -46,13 +46,13 @@ import {
   buildWorkflow,
   ComfyClient,
   ComfyError,
+  DEADLINE_MS,
   DEFAULT_COMFY_URL,
+  FIRST_DEADLINE_MS,
   templateModels,
 } from "../render/comfy";
 
 const CANDIDATES = 3;
-const FIRST_DEADLINE_MS = 600_000; // includes the cold model load
-const DEADLINE_MS = 300_000;
 
 interface Options {
   slug: string;

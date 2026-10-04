@@ -21,8 +21,9 @@ C:\ComfyUI\run_nvidia_gpu_lan.bat
 - `requirements.txt`: the pinned Python packages that the custom nodes add to ComfyUI's embedded Python. ComfyUI has no separate env.
 - `workflows/flux-gguf.api.json`: the base text-to-image workflow, in API format.
 - `prompts/character_refs.py <character.yml> [preset or style.yml]`: makes a reference set for one
-  character (8 poses × 3 seeds) so you can approve the look; contact sheet in `out/refs/`. It
-  resolves the look like `generate-scenes` (the episode's `style.yml`, else `shared/styles/cartoon.yml`).
+  character (8 poses × 3 seeds) so you can approve the look; contact sheet in
+  `out/refs/<id>_<look>_sheet.jpg`. It asks `scripts/print-look.ts` (Node) for the resolved look,
+  so it uses exactly what `generate-scenes` uses (the episode's `style.yml`, else `cartoon`).
 - Episode stills: `npm run generate-scenes <slug>` uses `workflows/flux-gguf.api.json` with
   the episode's look (`style.yml` → a preset in `shared/styles/`) and character files. A look with
   `pixelate` adds core ComfyUI nodes after decoding (ImageScale area → ImageQuantize → ImageScale

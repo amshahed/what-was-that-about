@@ -2,7 +2,14 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describeLook, listPresets, loadCharacters, loadLook, loadWorkflow } from "./scene-assets";
+import {
+  describeLook,
+  listPresets,
+  loadCharacters,
+  loadLook,
+  loadWorkflow,
+  resolveLookArg,
+} from "./scene-assets";
 
 const char = (id: string) => `id: ${id}\nname: ${id}\ndescription: ${id}, a person\n`;
 
@@ -81,6 +88,16 @@ describe("per-episode characters and style", () => {
         name: "custom",
         style: { prefix: "mine" },
       });
+    });
+
+    it("resolves a command-line look: episode folder, style file or preset name", () => {
+      writeFileSync(path.join(episode, "style.yml"), "preset: retro-pixel\n");
+      expect(resolveLookArg(episode, styles).name).toBe("retro-pixel");
+      expect(resolveLookArg(path.join(episode, "style.yml"), styles).name).toBe("retro-pixel");
+      expect(resolveLookArg("cartoon", styles).style.prefix).toBe("cartoon");
+      expect(() => resolveLookArg("Cartoon", styles)).toThrow('unknown preset "Cartoon"');
+      expect(() => resolveLookArg("../styles/cartoon", styles)).toThrow("style file not found");
+      expect(() => resolveLookArg("nope.yml", styles)).toThrow("style file not found");
     });
 
     it("does not let a preset name another preset", () => {

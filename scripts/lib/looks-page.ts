@@ -13,18 +13,18 @@ export interface LooksPageInput {
   slug: string;
   presets: string[];
   probes: LookProbe[];
-  /** (preset, probe index) → image path relative to out/, or undefined if it failed. */
-  file: (preset: string, probe: number) => string | undefined;
-  /** (preset, probe index) → the prompt sent to ComfyUI (shown on hover). */
-  prompt: (preset: string, probe: number) => string;
+  /** (column label, probe index, column index) → image path relative to out/, or undefined if it failed. */
+  file: (preset: string, probe: number, column: number) => string | undefined;
+  /** (column label, probe index, column index) → the prompt sent to ComfyUI (shown on hover). */
+  prompt: (preset: string, probe: number, column: number) => string;
 }
 
 export function renderLooksPage(p: LooksPageInput): string {
   const head = p.presets.map((n) => `<th>${esc(n)}</th>`).join("");
   const rows = p.probes.map((probe, i) => {
-    const cells = p.presets.map((n) => {
-      const f = p.file(n, i);
-      const title = esc(p.prompt(n, i));
+    const cells = p.presets.map((n, col) => {
+      const f = p.file(n, i, col);
+      const title = esc(p.prompt(n, i, col));
       return f
         ? `<td><a href="${esc(f)}" target="_blank"><img src="${esc(f)}" title="${title}"></a></td>`
         : `<td><div class="missing" title="${title}">failed</div></td>`;

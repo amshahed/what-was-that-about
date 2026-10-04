@@ -1,14 +1,16 @@
 # Look preset "vintage" — a 19th-century book illustration: engraving lines with a soft wash
-# (for books like Babel). See cartoon.yml for how presets work.
+# (for books like Babel). The prefix holds only style words (reference sets use it alone);
+# framing goes in the suffix. See cartoon.yml for how presets work.
 prefix: >-
   Vintage hand-drawn book illustration in the manner of a 19th-century engraving with soft
   watercolour wash: fine ink linework, light cross-hatching, cream paper tone, muted sepia, ochre
-  and deep red palette, wide 16:9 composition. Medium shot: characters are large, filling half the
-  frame height, with clear readable faces and expressive gestures.
+  and deep red palette.
 suffix: >-
-  The action is clearly shown in the center of the frame. Warm, well-lit daylight scene with a
-  light background and no large dark areas. Simple uncluttered setting with only the objects the scene needs. Unsigned, no border, no frame, no title plate, no caption, no text, no lettering, no
-  writing on signs, books or papers.
+  Wide 16:9 composition. Medium shot: characters are large, filling half the frame height, with
+  clear readable faces and expressive gestures. The action is clearly shown in the center of the
+  frame. Warm, well-lit daylight scene with a light background and no large dark areas. Simple
+  uncluttered setting with only the objects the scene needs. Unsigned, no border, no frame, no
+  title plate, no caption, no text, no lettering, no writing on signs, books or papers.
 captionSpace: >-
   Keep the top fifth of the frame as plain pale sky or bare wall, with no heads or important objects there.
 width: 1344
