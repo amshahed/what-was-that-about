@@ -38,3 +38,4 @@ episodes/**/source/
 
 # local tool envs (see tools/)
 .whisper-env/
+__pycache__/
