@@ -1,0 +1,5 @@
+# Look for ubik: a preset from shared/styles/ (cartoon, retro-pixel, vintage).
+# Compare first: npm run try-look ubik cartoon retro-pixel vintage
+# Change a field only when needed; it replaces the preset's field (e.g. suffix:, pixelate: false).
+# A new look for several books: add shared/styles/<name>.yml. Changing the look later remakes every still.
+preset: retro-pixel

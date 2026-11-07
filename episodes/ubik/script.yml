@@ -1,0 +1,30 @@
+# Episode script — ubik
+# See kit/SCRIPT.md for the schema and docs/episode-workflow.md for the steps.
+#
+# Sections (PRD §6.4): cold-open → spoiler-warn-and-setup → recap → analysis → verdict.
+# Mark them with YAML comments like the one below; the parser does not read [SECTION] tags yet.
+
+id: ubik
+tone: balanced
+
+beats:
+  # --- SECTION: cold-open ---
+  - narration: |
+      First line of narration. Hook the viewer in the first sentence.
+    scene:
+      # AI still: action, expression, setting. Characters' looks come from characters/<id>.yml.
+      image: "a tired man argues with his front door; setting: a small cluttered apartment"
+      # cast: [joe-chip]
+    tags: [HOLD]
+
+  - narration: |
+      A text beat: one big word or number fills the frame.
+    scene:
+      layers:
+        - component: bg:paper
+        - component: text:hero
+          props: { text: "HALF-LIFE", sub: "(not the video game)", color: red }
+    tags: [ZOOM]
+
+  # Add more beats. One idea per beat.
+  # Tags: [HOLD] | [ZOOM] | ["SFX:record scratch"] | ["SFX:boing"] | ["SFX:ding"] | ["SFX:whoosh"]
